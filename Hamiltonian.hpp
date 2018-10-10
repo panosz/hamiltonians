@@ -5,7 +5,7 @@
 #ifndef HAMILTONIANS_HAMILTONIAN_HPP
 #define HAMILTONIANS_HAMILTONIAN_HPP
 
-#include "State2.hpp"
+#include "State.hpp"
 namespace Integrators
 {
     namespace Hamiltonian

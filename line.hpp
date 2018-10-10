@@ -5,7 +5,7 @@
 #ifndef HAMILTONIANS_LINE_HPP
 #define HAMILTONIANS_LINE_HPP
 #include <iostream>
-#include "State2.hpp"
+#include "State.hpp"
 
 namespace Integrators
 {

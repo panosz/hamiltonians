@@ -4,25 +4,32 @@
 
 #include "observer.hpp"
 #include <utility>
+#include <boost/math/constants/constants.hpp>
 
 namespace Integrators
 {
     namespace Observer
     {
-        PushBackObserver::PushBackObserver (std::vector<Geometry::State2>& s_out, std::vector<double>& t_out, size_t every)
-            :
-            sout_{s_out}, tout_{t_out}, every_{every > 0 ? every : 1}
-        { }
 
-
-        void PushBackObserver::operator() (Geometry::State2 s, double t) const
+        void PushBackObserver::operator() (Geometry::State2 s, double t)
         {
           if (!(count++ % every_))
             {
-              sout_.push_back(s);
-              tout_.push_back(t);
-            }
+              s_.push_back(s);
+              t_.push_back(t);
+              }
 
+        }
+        PushBackObserver::PushBackObserver (std::vector<Geometry::State2>& s, std::vector<double>& t, size_t every)
+            :s_{s},t_{t},
+            every_{every > 0 ? every : 1}
+        {
+
+        }
+
+        bool crossZeroPositiveDirectionPredicate (double current_value, double previous_value)
+        {
+          return (current_value >= 0 && previous_value< 0);
         }
     }
 }
