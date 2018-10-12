@@ -113,7 +113,7 @@ namespace Integrators
         {
           PushBackObserver pbo(s_out,t_out,every);
           return CrossSurfaceObserver<ActionFunctor, SurfaceFunctor>(af, sf,pbo);
-        };
+        }
 
         template<typename ActionFunctor>
         auto makeCrossLineObserver (ActionFunctor af, const Geometry::Line& line, std::vector<Geometry::State2>& s_out,

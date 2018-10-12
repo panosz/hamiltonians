@@ -24,7 +24,7 @@ namespace Integrators
          public:
           double operator() (const State2& position) const noexcept;
           Line (const State2& position,State2 perpendicular_vector);
-
+          State2 perpendicular_vector() const noexcept;
         };
 
         std::ostream& operator<< (std::ostream&, const Line&);

@@ -37,8 +37,10 @@ namespace Integrators
 
           return os;
         }
-
-
+        State2 Line::perpendicular_vector () const noexcept
+        {
+          return s_;
+        }
 
     }
 }

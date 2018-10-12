@@ -81,6 +81,12 @@ namespace Integrators
         {
 
         }
+        State2& State2::operator-= (const State2& other) noexcept
+        {
+          v_[0]-= other.v_[0];
+          v_[1]-= other.v_[1];
+          return *this;
+        }
 
         State3::State3 (double q, double p, double t) noexcept
             : v_{{q, p, t}}
@@ -135,6 +141,13 @@ namespace Integrators
         :v_{{s2.q(),s2.p(),t}}
         {
 
+        }
+        State3& State3::operator-= (const State3& other) noexcept
+        {
+          v_[0]-= other.v_[0];
+          v_[1]-= other.v_[1];
+          v_[2]-= other.v_[2];
+          return *this;
         }
 
         State3 operator- (const State3& other)

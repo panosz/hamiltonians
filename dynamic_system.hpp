@@ -68,7 +68,7 @@ namespace Integrators
           /// \param s the phase space position
           /// \param dsdt the time derivatives are returned in this parameter
           /// \param t time
-          inline Geometry::State3 operator() (const Geometry::State3& s_extended, Geometry::State3& dsdt_extended, double t) const
+          inline void  operator() (const Geometry::State3& s_extended, Geometry::State3& dsdt_extended, double t) const
           {
 
             Geometry::State2 s{s_extended};

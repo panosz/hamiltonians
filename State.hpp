@@ -37,6 +37,7 @@ namespace Integrators
 
           State2& operator+= (const State2& other) noexcept;
 
+          State2& operator -= (const State2& other) noexcept;
         };
 
         State2 operator- (const State2& other);
@@ -70,6 +71,8 @@ namespace Integrators
           State3& operator/= (double d);
 
           State3& operator+= (const State3& other) noexcept;
+
+          State3& operator -= (const State3& other) noexcept;
 
         };
 
