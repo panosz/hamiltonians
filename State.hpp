@@ -7,6 +7,8 @@
 
 #include <iostream>
 #include <array>
+#include <armadillo>
+
 #include <boost/operators.hpp>
 #include <boost/numeric/odeint/algebra/vector_space_algebra.hpp>
 
@@ -19,7 +21,7 @@ namespace Integrators
 
         class State2 : boost::additive<State2, boost::additive<State2, double,
             boost::multiplicative<State2, double> > > {
-          using vector_type = std::array<double, 2>;
+          using vector_type = arma::colvec2;
           vector_type v_{};
          public:
           State2 () = default;
@@ -38,14 +40,17 @@ namespace Integrators
           State2& operator+= (const State2& other) noexcept;
 
           State2& operator -= (const State2& other) noexcept;
+
+          double operator*(const State2& other) const noexcept;
+
+          State2 operator/(const State2& other) const noexcept;
+
         };
 
         State2 operator- (const State2& other);
 
-        double operator* (const State2& s1, const State2& s2);
 
         double magnitude_squared (const State2& s);
-        State2 operator/ (const State2& s1, const State2& s2);
 
         State2 abs (const State2& s);
 

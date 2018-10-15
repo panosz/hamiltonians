@@ -10,10 +10,6 @@ namespace Integrators
 {
     namespace Geometry
     {
-        double operator* (const State2& s1, const State2& s2)
-        {
-          return s1.q() * s2.q() + s1.p() * s2.p();
-        }
 
         State2 operator/ (const State2& s1, const State2& s2)
         {
@@ -33,6 +29,7 @@ namespace Integrators
         {
           return s * s;
         }
+
         State2 operator- (const State2& other)
         {
           return State2{-other.q(), -other.p()};
@@ -53,39 +50,44 @@ namespace Integrators
         }
         State2& State2::operator+= (double d) noexcept
         {
-          v_[0] += d;
-          v_[1] += d;
+          v_ += d;
 
           return *this;
         }
         State2& State2::operator*= (double d) noexcept
         {
-          v_[0] *= d;
-          v_[1] *= d;
+          v_ *= d;
           return *this;
         }
         State2& State2::operator+= (const State2& other) noexcept
         {
-          v_[0] += other.v_[0];
-          v_[1] += other.v_[1];
+          v_ += other.v_;
           return *this;
         }
         State2& State2::operator/= (double d)
         {
-          v_[0] /= d;
-          v_[1] /= d;
+          v_ /= d;
           return *this;
         }
         State2::State2 (const State3& s3) noexcept
-        :v_{{s3.q(),s3.p()}}
+            : v_{{s3.q(), s3.p()}}
         {
 
         }
         State2& State2::operator-= (const State2& other) noexcept
         {
-          v_[0]-= other.v_[0];
-          v_[1]-= other.v_[1];
+          v_ -= other.v_;
           return *this;
+        }
+        double State2::operator* (const State2& other) const noexcept
+        {
+
+          return arma::as_scalar(v_.t() * other.v_);
+
+        }
+        State2 State2::operator/ (const State2& other) const noexcept
+        {
+          return State2();
         }
 
         State3::State3 (double q, double p, double t) noexcept
@@ -138,15 +140,15 @@ namespace Integrators
           return *this;
         }
         State3::State3 (const State2& s2, double t) noexcept
-        :v_{{s2.q(),s2.p(),t}}
+            : v_{{s2.q(), s2.p(), t}}
         {
 
         }
         State3& State3::operator-= (const State3& other) noexcept
         {
-          v_[0]-= other.v_[0];
-          v_[1]-= other.v_[1];
-          v_[2]-= other.v_[2];
+          v_[0] -= other.v_[0];
+          v_[1] -= other.v_[1];
+          v_[2] -= other.v_[2];
           return *this;
         }
 

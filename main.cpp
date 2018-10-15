@@ -108,7 +108,9 @@ inline auto make_init_surface_observer (const PoincareSurfaceType& poincareSurfa
       return poincareSurface.step_back(s, t, current_distance);
   };
 
-  return Integrators::Observer::makeCrossSurfaceObserver(action_functor, poincareSurface.cross_line(), s_out, t_out);
+  const auto keep_all = [](auto &){return true;};
+
+  return Integrators::Observer::makeCrossSurfaceObserver(action_functor, poincareSurface.cross_line(),keep_all, s_out, t_out);
 }
 
 template<typename Observer, typename IntegrationRange>
