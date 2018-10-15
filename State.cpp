@@ -11,10 +11,6 @@ namespace Integrators
     namespace Geometry
     {
 
-        State2 operator/ (const State2& s1, const State2& s2)
-        {
-          return State2{s1.q() / s2.q(), s1.p() / s2.p()};
-        }
         State2 abs (const State2& s)
         {
           return State2{std::abs(s.q()), std::abs(s.p())};
@@ -34,6 +30,7 @@ namespace Integrators
         {
           return State2{-other.q(), -other.p()};
         }
+
 
         State2::State2 (double q, double p) noexcept
             : v_{{q, p}}
@@ -69,11 +66,18 @@ namespace Integrators
           v_ /= d;
           return *this;
         }
-        State2::State2 (const State3& s3) noexcept
-            : v_{{s3.q(), s3.p()}}
+//        State2::State2 (const State2_Extended& s_e) noexcept
+//            : v_{s_e.q(), s_e.p()}
+//        {
+//
+//        }
+
+        State2::State2 (const State2_Action& s_a) noexcept
+        :  v_{s_a.q(), s_a.p()}
         {
 
         }
+
         State2& State2::operator-= (const State2& other) noexcept
         {
           v_ -= other.v_;
@@ -87,96 +91,121 @@ namespace Integrators
         }
         State2 State2::operator/ (const State2& other) const noexcept
         {
-          return State2();
+          State2 ret{*this};
+          ret.v_/=other.v_;
+          return ret;
         }
 
-        State3::State3 (double q, double p, double t) noexcept
-            : v_{{q, p, t}}
+
+        State2_Action abs (const State2_Action& s)
+        {
+          State2_Action ret{s};
+          ret.v_=arma::abs(ret.v_);
+          return ret;
+        }
+        std::ostream& operator<< (std::ostream& out, const State2_Action& s)
+        {
+          out<< s.v_.t();
+          return out;
+        }
+
+
+        State2_Extended::State2_Extended (double q, double p, double J, double t) noexcept
+            : v_{{q, p, t, J}}
         {
 
         }
-        double State3::q () const noexcept
+        double State2_Extended::q () const noexcept
         {
           return v_[0];
         }
-        double State3::p () const noexcept
+        double State2_Extended::p () const noexcept
         {
           return v_[1];
         }
-        double State3::t () const noexcept
+        double State2_Extended::J() const noexcept
         {
           return v_[2];
         }
-        State3& State3::operator+= (double d) noexcept
+
+        double State2_Extended::t () const noexcept
         {
-          boost::range::transform(v_,
-                                  std::begin(v_),
-                                  [d] (auto x)
-                                  { return x + d; });
+          return v_[3];
+        }
+        State2_Extended& State2_Extended::operator+= (double d) noexcept
+        {
+          v_+=d;
           return *this;
         }
-        State3& State3::operator*= (double d) noexcept
+        State2_Extended& State2_Extended::operator*= (double d) noexcept
         {
-          boost::range::transform(v_,
-                                  std::begin(v_),
-                                  [d] (auto x)
-                                  { return x * d; });
+          v_*=d;
           return *this;
         }
-        State3& State3::operator/= (double d)
+        State2_Extended& State2_Extended::operator/= (double d)
         {
-          boost::range::transform(v_,
-                                  std::begin(v_),
-                                  [d] (auto x)
-                                  { return x / d; });
+         v_/=d;
           return *this;
         }
-        State3& State3::operator+= (const State3& other) noexcept
+        State2_Extended& State2_Extended::operator+= (const State2_Extended& other) noexcept
         {
-          boost::range::transform(v_, other.v_,
-                                  std::begin(v_),
-                                  [] (auto x1, auto x2)
-                                  { return x1 + x2; });
+          v_+=other.v_;
           return *this;
         }
-        State3::State3 (const State2& s2, double t) noexcept
-            : v_{{s2.q(), s2.p(), t}}
+        State2_Extended::State2_Extended (const State2_Action& s2, double t) noexcept
+            : v_{{s2.q(), s2.p(), s2.J(), t}}
         {
 
         }
-        State3& State3::operator-= (const State3& other) noexcept
+        State2_Extended& State2_Extended::operator-= (const State2_Extended& other) noexcept
         {
-          v_[0] -= other.v_[0];
-          v_[1] -= other.v_[1];
-          v_[2] -= other.v_[2];
+         v_-=other.v_;
           return *this;
         }
+        double State2_Extended::operator* (const State2_Extended& other) const noexcept
+        {
+          return arma::as_scalar(v_.t() * other.v_);
+        }
 
-        State3 operator- (const State3& other)
-        {
-          return State3(-other.q(), -other.p(), -other.t());
-        }
-        double operator* (const State3& s1, const State3& s2)
-        {
-          return s1.q() * s2.q()
-                 + s1.p() * s2.p()
-                 + s1.t() * s2.t();
-        }
-        double magnitude_squared (const State3& s)
-        {
-          using boost::math::pow;
-          return pow<2>(s.q()) + pow<2>(s.p()) + pow<2>(s.t());
-        }
-        State3 abs (const State3& s)
-        {
-          using std::abs;
 
-          return State3(abs(s.q()), abs(s.p()), abs(s.t()));
-        }
-        std::ostream& operator<< (std::ostream& out, const State3& s)
+        State2_Extended State2_Extended::operator/ (const State2_Extended& other) const noexcept
         {
-          out << s.q() << ' ' << s.p() << ' ' << s.t();
+          State2_Extended ret{*this};
+          ret.v_/=other.v_;
+          return ret;
+        }
+
+        State2_Extended operator- (const State2_Extended& other)
+        {
+          State2_Extended ret{other};
+          ret.v_=-ret.v_;
+          return ret;
+        }
+
+
+
+        double magnitude_squared (const State2_Extended& s)
+        {
+          return s*s;
+        }
+        State2_Extended abs (const State2_Extended& s)
+        {
+          State2_Extended ret{s};
+          ret.v_=arma::abs(ret.v_);
+          return ret;
+        }
+        std::ostream& operator<< (std::ostream& out, const State2_Extended& s)
+        {
+          out <<s.v_.t();
           return out;
+        }
+
+
+
+        State2_Action::State2_Action (const State2_Extended& s_e) noexcept
+            :v_{s_e.q(),s_e.p(),s_e.J()}
+        {
+
         }
     }
 }

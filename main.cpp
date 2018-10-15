@@ -14,13 +14,15 @@
 #include <boost/range/algorithm/find_if.hpp>
 #include "myUtilities.hpp"
 
+#include <armadillo>
+
 using namespace Integrators;
 using namespace Integrators::Geometry;
 using namespace boost::numeric::odeint;
-using ErrorStepperType = boost::numeric::odeint::runge_kutta_cash_karp54<Geometry::State2, double, Geometry::State2,
+using ErrorStepperType = boost::numeric::odeint::runge_kutta_cash_karp54<Geometry::State2_Action, double, Geometry::State2_Action,
     double, boost::numeric::odeint::vector_space_algebra>;
 
-using ErrorStepperType_Extended = boost::numeric::odeint::runge_kutta_cash_karp54<Geometry::State3, double, Geometry::State3,
+using ErrorStepperType_Extended = boost::numeric::odeint::runge_kutta_cash_karp54<Geometry::State2_Extended, double, Geometry::State2_Extended,
     double, boost::numeric::odeint::vector_space_algebra>;
 
 using ControlledStepperType = boost::numeric::odeint::controlled_runge_kutta<ErrorStepperType>;
@@ -56,15 +58,15 @@ struct IntegrationOptions {
 template<typename Ham>
 inline auto
 make_integration_range (const Ham& hamiltonian,
-                        State2& s_start,
+                        State2_Action& s_start,
                         const IntegrationOptions& options)
 {
 
   const auto controlled_stepper = make_controlled(options.abs_err, options.rel_err, ErrorStepperType());
 
-  auto integration_functor = [&hamiltonian] (const Geometry::State2& s, Geometry::State2& dsdt, double /*t*/)
+  auto integration_functor = [&hamiltonian] (const Geometry::State2_Action& s, Geometry::State2_Action& dsdt, double /*t*/)
   {
-      dsdt = Integrators::Dynamics::dynamic_system(hamiltonian, s);
+      dsdt = Integrators::Dynamics::dynamic_system_Action(hamiltonian, s);
   };
 
   return boost::make_iterator_range(
@@ -79,16 +81,16 @@ make_integration_range (const Ham& hamiltonian,
 template<typename Ham>
 inline auto
 make_interval_range (const Ham& hamiltonian,
-                     State2& s_start,
+                     State2_Action& s_start,
                      const std::vector<double>& times,
                      const IntegrationOptions& options)
 {
 
   const auto controlled_stepper = make_controlled(options.abs_err, options.rel_err, ErrorStepperType());
 
-  auto integration_functor = [&hamiltonian] (const Geometry::State2& s, Geometry::State2& dsdt, double /*t*/)
+  auto integration_functor = [&hamiltonian] (const Geometry::State2_Action& s, Geometry::State2_Action& dsdt, double /*t*/)
   {
-      dsdt = Integrators::Dynamics::dynamic_system(hamiltonian, s);
+      dsdt = Integrators::Dynamics::dynamic_system_Action(hamiltonian, s);
   };
 
   return boost::make_iterator_range(
@@ -100,10 +102,10 @@ make_interval_range (const Ham& hamiltonian,
 
 template<typename PoincareSurfaceType>
 inline auto make_init_surface_observer (const PoincareSurfaceType& poincareSurface,
-                                        std::vector<Geometry::State2>& s_out,
+                                        std::vector<Geometry::State2_Action>& s_out,
                                         std::vector<double>& t_out)
 {
-  auto action_functor = [&poincareSurface] (State2 s, double t, double current_distance)
+  auto action_functor = [&poincareSurface] (State2_Action s, double t, double current_distance)
   {
       return poincareSurface.step_back(s, t, current_distance);
   };
@@ -128,7 +130,7 @@ void observe (Observer& observer, const IntegrationRange& integration_range)
 }
 
 template<typename Ham>
-std::pair<std::vector<State2>, std::vector<double> >
+std::pair<std::vector<State2_Action>, std::vector<double> >
 calculate_crossings (const Ham& hamiltonian, Geometry::State2 s_start, const IntegrationOptions& options)
 {
 
@@ -136,7 +138,7 @@ calculate_crossings (const Ham& hamiltonian, Geometry::State2 s_start, const Int
 
   const auto integration_range = make_integration_range(hamiltonian, s_start, options);
 
-  std::vector<Geometry::State2> s_out;
+  std::vector<Geometry::State2_Action> s_out;
   std::vector<double> t_out;
   auto observer = make_init_surface_observer(poincareSurface, s_out, t_out);
 
@@ -146,15 +148,18 @@ calculate_crossings (const Ham& hamiltonian, Geometry::State2 s_start, const Int
 }
 
 template<typename Ham>
-std::pair<std::vector<State2>, std::vector<double> >
+std::pair<std::vector<State2_Action>, std::vector<double> >
 calculate_first_crossing (const Ham& hamiltonian, Geometry::State2 s_start, const IntegrationOptions& options)
 {
 
   const auto poincareSurface = make_PoincareSurface(hamiltonian, s_start,ErrorStepperType_Extended());
 
-  const auto integration_range = make_integration_range(hamiltonian, s_start, options);
 
-  std::vector<Geometry::State2> s_out;
+  Geometry::State2_Action s_start_Action{s_start,0};
+
+   auto integration_range = make_integration_range(hamiltonian, s_start_Action, options);
+
+  std::vector<Geometry::State2_Action> s_out;
   std::vector<double> t_out;
   auto observer = make_init_surface_observer(poincareSurface, s_out, t_out);
 
@@ -186,15 +191,21 @@ int main ()
 
     options.set_integration_time(100.0);
 
-    const auto[s_out, t_out] = calculate_first_crossing(ham, s_start, options);
 
+//    const auto poincareSurface = make_PoincareSurface(ham, s_start,ErrorStepperType_Extended());
+
+
+    Geometry::State2_Action s_start_Action{s_start,0};
+
+    const auto[s_out, t_out] = calculate_first_crossing(ham, s_start, options);
+//
     std::cout << "adaptive integration output:\n";
 
     for (size_t i = 0; i < t_out.size(); ++i)
       std::cout << t_out[i] << " " << s_out[i] << '\n';
 
 
-    State2 s2 = s_start;
+    State2_Action s2 = s_start;
 
     auto times = PanosUtilities::linspace(0.0, t_out[0], 100);
 
@@ -207,10 +218,12 @@ int main ()
     std::cout << "orbit range:\n";
     for (const auto& s_t : orbit_range)
       {
-        std::cout << s_t.first - s_start<< " , " << s_t.second << '\n';
+        std::cout << s_t.first << " , " << s_t.second << '\n';
       }
-    return 0;
 
+
+
+    return 0;
   }
 
 }

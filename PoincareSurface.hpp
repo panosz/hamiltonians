@@ -22,17 +22,17 @@ namespace Integrators
 
      public:
 
-      std::pair<Geometry::State2, double> step_back (Geometry::State2 s, double t, double current_distance) const
+      std::pair<Geometry::State2_Action, double> step_back (Geometry::State2_Action s, double t, double current_distance) const
       {
 
-        auto state_extended = Geometry::State3{s, t};
+        auto state_extended = Geometry::State2_Extended{s, t};
 
-        auto df = [this] (const Geometry::State3& s_extended, Geometry::State3& dsdt_extended, double /*time*/)
+        auto df = [this] (const Geometry::State2_Extended& s_extended, Geometry::State2_Extended& dsdt_extended, double /*time*/)
         {
 
             dsdt_extended = Integrators::Dynamics::dynamic_system_along_direction(ham_,
                                                                                   direction_,
-                                                                                  Geometry::State2{s_extended});
+                                                                                  Geometry::State2_Action{s_extended});
         };
 
         stepper_.do_step(
@@ -41,7 +41,7 @@ namespace Integrators
             t,
             -current_distance);
 
-        s = Geometry::State2{state_extended};
+        s = Geometry::State2_Action{state_extended};
         t = state_extended.t();
 
         return std::make_pair(s, t);

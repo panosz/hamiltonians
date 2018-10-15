@@ -11,7 +11,7 @@ namespace Integrators
     namespace Observer
     {
 
-        void PushBackObserver::operator() (Geometry::State2 s, double t)
+        void PushBackObserver::operator() (Geometry::State2_Action s, double t)
         {
           if (!(count++ % every_))
             {
@@ -20,7 +20,7 @@ namespace Integrators
               }
 
         }
-        PushBackObserver::PushBackObserver (std::vector<Geometry::State2>& s, std::vector<double>& t, size_t every)
+        PushBackObserver::PushBackObserver (std::vector<Geometry::State2_Action>& s, std::vector<double>& t, size_t every)
             :s_{s},t_{t},
             every_{every > 0 ? every : 1}
         {

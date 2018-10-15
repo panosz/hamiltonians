@@ -17,7 +17,7 @@ namespace Integrators
 
         class NoOpFunctor {
          public:
-          void operator() (Geometry::State2&, double&)
+          void operator() (Geometry::State2_Action&, double&)
           {
           };
 
@@ -25,7 +25,7 @@ namespace Integrators
 
         class PushBackObserver {
          private:
-          std::vector<Geometry::State2>& s_;
+          std::vector<Geometry::State2_Action>& s_;
           std::vector<double>& t_;
           size_t every_{};
           mutable size_t count = 0;
@@ -34,17 +34,8 @@ namespace Integrators
           PushBackObserver (const PushBackObserver&) = default;
           PushBackObserver (PushBackObserver&&) noexcept = default;
 
-          PushBackObserver (std::vector<Geometry::State2>& s, std::vector<double>& t,size_t every);
-          void operator() (Geometry::State2 s, double t);
-          const std::vector<Geometry::State2>& s () const
-          {
-            return s_;
-          };
-
-          const std::vector<double>& t() const
-          {
-            return t_;
-          }
+          PushBackObserver (std::vector<Geometry::State2_Action>& s, std::vector<double>& t,size_t every);
+          void operator() (Geometry::State2_Action s, double t);
 
 
         };
@@ -63,10 +54,6 @@ namespace Integrators
 
           double previous_distance_from_surface_{0};
 
-          double distance_from_surface (const Geometry::State2& s) const
-          {
-            return distanceFunctor_(s);
-          }
 
           bool crossing_detected (double distance_from_surface) const
           {
@@ -78,7 +65,7 @@ namespace Integrators
           /// \param t the current time
           /// \param distance the distance from the surface
           /// \return true, if the crossing has been accepted and forwarded to the pushBackObserver
-          bool after_crossing_action (const Geometry::State2& s, double t, double distance)
+          bool after_crossing_action (const Geometry::State2_Action& s, double t, double distance)
           {
 
             const auto [s_out, t_out] = stepOnFunctor_(s, t, distance);
@@ -99,10 +86,10 @@ namespace Integrators
                 validCrossingPredicate_{fop}
           { };
 
-          bool operator() (const Geometry::State2& s, double t)
+          bool operator() (const Geometry::State2_Action& s, double t)
           {
             bool crossing_accepted = false;
-            const auto distance = distanceFunctor_(s);
+            const auto distance = distanceFunctor_(Geometry::State2{s});
 
             if (crossing_detected(distance))
                 crossing_accepted = after_crossing_action(s, t, distance);
@@ -112,7 +99,7 @@ namespace Integrators
             return crossing_accepted;
           }
 
-          bool operator() (const std::pair<Geometry::State2,double>& s_t)
+          bool operator() (const std::pair<Geometry::State2_Action,double>& s_t)
           {
             const auto& [s,t] = s_t;
             return operator()(s,t);
@@ -120,20 +107,20 @@ namespace Integrators
 
         };
 
-        template<typename ActionFunctor, typename SurfaceFunctor, typename ValidCrossingPredicate>
-        auto makeCrossSurfaceObserver (ActionFunctor af, SurfaceFunctor sf, ValidCrossingPredicate vcp,
-                                       std::vector<Geometry::State2>& s_out,
+        template<typename StepOnFunctor, typename SurfaceFunctor, typename ValidCrossingPredicate>
+        auto makeCrossSurfaceObserver (StepOnFunctor stepOnFunctor, SurfaceFunctor sf, ValidCrossingPredicate vcp,
+                                       std::vector<Geometry::State2_Action>& s_out,
                                        std::vector<double>& t_out, size_t every =0)
         {
           PushBackObserver pbo(s_out,t_out,every);
-          return CrossSurfaceObserver<ActionFunctor, SurfaceFunctor, ValidCrossingPredicate>(af, sf,pbo, vcp);
+          return CrossSurfaceObserver<StepOnFunctor, SurfaceFunctor, ValidCrossingPredicate>(stepOnFunctor, sf,pbo, vcp);
         }
 
-        template<typename ActionFunctor>
-        auto makeCrossLineObserver (ActionFunctor af, const Geometry::Line& line, std::vector<Geometry::State2>& s_out,
+        template<typename StepOnFunctor>
+        auto makeCrossLineObserver (StepOnFunctor stepOnFunctor, const Geometry::Line& line, std::vector<Geometry::State2_Action>& s_out,
                                     std::vector<double>& t_out, size_t every =0)
         {
-          return makeCrossSurfaceObserver(af, line,[](auto &){return true;},s_out,t_out, every);
+          return makeCrossSurfaceObserver(stepOnFunctor, line,[](auto &){return true;},s_out,t_out, every);
         }
 
     }
