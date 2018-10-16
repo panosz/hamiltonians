@@ -6,7 +6,8 @@
 #define HAMILTONIANS_STATE_HPP
 
 #include <iostream>
-#include <array>
+#include <initializer_list>
+#include <type_traits>
 #include <armadillo>
 
 #include <boost/operators.hpp>
@@ -17,128 +18,142 @@ namespace Integrators
     namespace Geometry
     {
 
-        class State2_Extended;
-        class State2_Action;
+        template<unsigned N, typename = typename std::enable_if<(N >= 2)>::type>
+        class State : boost::additive<State<N>, boost::additive<State<N>, double,
+            boost::multiplicative<State<N>, double> > > {
 
-        class State2 : boost::additive<State2, boost::additive<State2, double,
-            boost::multiplicative<State2, double> > > {
-          using vector_type = arma::colvec2;
-          vector_type v_{};
+          template<unsigned M, typename>
+          friend
+          class State;
+
+          using vector_type = arma::colvec::fixed<N>;
+
+          template<bool B, typename T>
+          using Enable_if = typename std::enable_if<B, T>::type;
+
+          vector_type v_{arma::fill::zeros};
+
          public:
-          State2 () = default;
-          State2 (double q, double p) noexcept;
-//           explicit State2 (const State2_Extended& s_e) noexcept;
-          explicit State2 (const State2_Action& s_a) noexcept;
-
-          double q () const noexcept;
-          double p () const noexcept;
-
-          State2& operator+= (double d) noexcept;
-
-          State2& operator*= (double d) noexcept;
-
-          State2& operator/= (double d);
-
-          State2& operator+= (const State2& other) noexcept;
-
-          State2& operator-= (const State2& other) noexcept;
-
-          double operator* (const State2& other) const noexcept;
-
-          State2 operator/ (const State2& other) const noexcept;
-
-          inline double inf_norm () const noexcept
-          {
-            return arma::norm(v_, "inf");
-          }
-
-        };
-
-        State2 operator- (const State2& other);
-
-        double magnitude_squared (const State2& s);
-
-        State2 abs (const State2& s);
-
-        std::ostream& operator<< (std::ostream& out, const State2& s);
-
-        // State2_Action
-        class State2_Action : boost::additive<State2_Action, boost::additive<State2_Action, double,
-            boost::multiplicative<State2_Action, double> > > {
-          using vector_type = arma::colvec3;
-          vector_type v_{};
-         public:
-          State2_Action () = default;
-          State2_Action (double q, double p, double J = 0) noexcept
-              : v_{q, p, J}
-          {
-
-          };
-
-          State2_Action (const State2& s2, double J = 0) noexcept
-              : v_{s2.q(), s2.p(), J}
+          State() = default;
+          State (std::initializer_list<double> l) noexcept
+              : v_{l}
           { };
 
-          explicit State2_Action(const State2_Extended & s_e) noexcept;
+          /// \brief constructor from State with more elements.
+          /// \tparam M the dimension of the other state
+          /// \param other the other state
+          ///
+          /// see https://stackoverflow.com/a/17842695/6060982
+          template<unsigned M>
+          explicit State (const State<M>& other, typename std::enable_if<(N < M)>::type * = 0) noexcept
+              : v_{other.v_(arma::span(0, N - 1))}
+          {
+          }
+
+          /// \brief constructor from State with fewer elements.
+          /// \tparam M the dimension of the other state
+          /// \param other the other state
+          ///
+          /// see https://stackoverflow.com/a/17842695/6060982
+          template<unsigned M>
+          explicit State (const State<M>& other, typename std::enable_if<(N > M)>::type * = 0) noexcept
+              : v_{}
+          {
+            v_(arma::span(0, M - 1)) = other.v_;
+          }
+
+          template<unsigned M>
+          State& operator= (const State<M>& other)
+          {
+
+            if constexpr (N < M)
+              v_ = other.v_(arma::span(0, N - 1));
+            else
+              {
+                v_(arma::span(0, M - 1)) = other.v_;
+                v_(arma::span(M, N-1)).zeros();
+              }
+
+            return *this;
+          }
 
 
-          inline double q () const noexcept
+          double q () const noexcept
           {
             return v_[0];
           }
 
-          inline double p () const noexcept
+          double& q () noexcept
+          {
+            return v_[0];
+          }
+
+          double p () const noexcept
           {
             return v_[1];
           }
 
-          inline double J () const noexcept
-          {
-            return v_[2];
-          }
+          double& p () noexcept
+          { return v_[1]; }
 
-          inline State2_Action& operator+= (double d) noexcept
+          template<unsigned DIM = N>
+          Enable_if<(DIM >= 3), double> J () const noexcept
+          { return v_[2]; }
+
+          template<unsigned DIM = N>
+          Enable_if<(DIM >= 3), double>& J () noexcept
+          { return v_[2]; }
+
+          template<unsigned DIM = N>
+          Enable_if<(DIM >= 4), double> t () const noexcept
+          { return v_[3]; }
+
+          template<unsigned DIM = N>
+          Enable_if<(DIM >= 4), double>& t ()  noexcept
+          { return v_[3]; }
+
+          inline State& operator+= (double d) noexcept
           {
             v_ += d;
             return *this;
           }
 
-          inline State2_Action& operator*= (double d) noexcept
+          inline State& operator*= (double d) noexcept
           {
             v_ *= d;
             return *this;
 
           }
 
-          inline State2_Action& operator/= (double d)
+          inline State& operator/= (double d)
           {
             v_ /= d;
             return *this;
 
           }
 
-          inline State2_Action& operator+= (const State2_Action& other) noexcept
+          inline State& operator+= (const State& other) noexcept
           {
             v_ += other.v_;
             return *this;
 
           }
 
-          inline State2_Action& operator-= (const State2_Action& other) noexcept
+          inline State& operator-= (const State& other) noexcept
           {
             v_ -= other.v_;
             return *this;
 
           }
 
-          inline double operator* (const State2_Action& other) const noexcept
+          inline double operator* (const State& other) const noexcept
           {
             return arma::as_scalar(v_.t() * other.v_);
           }
 
-          inline State2_Action operator/ (const State2_Action& other) const noexcept
+          inline State operator/ (const State& other) const noexcept
           {
-            State2_Action ret{*this};
+            State ret{*this};
             ret.v_ /= other.v_;
             return ret;
           }
@@ -148,76 +163,40 @@ namespace Integrators
             return arma::norm(v_, "inf");
           }
 
-          friend State2_Action abs (const State2_Action& s);
-          friend std::ostream& operator<< (std::ostream& out, const State2_Action& s);
-        };
-
-        inline State2_Action operator- (const State2_Action& other)
-        {
-          return State2_Action{-other.q(), -other.q(), -other.J()};
-        }
-//
-//        double magnitude_squared (const State2_Action& s);
-//
-        State2_Action abs (const State2_Action& s);
-//
-        std::ostream& operator<< (std::ostream& out, const State2_Action& s);
-
-
-
-        // State2_Action end
-
-
-
-
-
-        class State2_Extended : boost::additive<State2_Extended, boost::additive<State2_Extended, double,
-            boost::multiplicative<State2_Extended, double> > > {
-          using vector_type = arma::colvec4;
-          vector_type v_{};
-         public:
-          State2_Extended () = default;
-          State2_Extended (double q, double p, double J = 0, double t = 0) noexcept;
-          State2_Extended (const State2_Action& s2_action, double t = 0) noexcept;
-
-          double q () const noexcept;
-          double p () const noexcept;
-          double J () const noexcept;
-          double t () const noexcept;
-
-          State2_Extended& operator+= (double d) noexcept;
-
-          State2_Extended& operator*= (double d) noexcept;
-
-          State2_Extended& operator/= (double d);
-
-          State2_Extended& operator+= (const State2_Extended& other) noexcept;
-
-          State2_Extended& operator-= (const State2_Extended& other) noexcept;
-
-          double operator* (const State2_Extended& other) const noexcept;
-
-          State2_Extended operator/ (const State2_Extended& other) const noexcept;
-
-          inline double inf_norm () const noexcept
+          State abs () const noexcept
           {
-            return arma::norm(v_, "inf");
+            State ret{};
+            ret.v_ = arma::abs(v_);
+            return ret;
           }
 
-          friend State2_Extended abs (const State2_Extended& s);
-          friend State2_Extended operator- (const State2_Extended& other);
-          friend double magnitude_squared (const State2_Extended& s);
-          friend std::ostream& operator<< (std::ostream& out, const State2_Extended& s);
+          template<unsigned DIM>
+          friend std::ostream& operator<< (std::ostream& out, const State<DIM>& s);
 
         };
 
-        State2_Extended operator- (const State2_Extended& other);
+        template<unsigned N>
+        auto abs (const State<N>& s)
+        {
+          return s.abs();
+        }
 
-        double magnitude_squared (const State2_Extended& s);
+        template<unsigned N>
+        double magnitude_squared (const State<N>& s) noexcept
+        {
+          return s * s;
+        }
 
-        State2_Extended abs (const State2_Extended& s);
+        template<unsigned N>
+        std::ostream& operator<< (std::ostream& out, const State<N>& s)
+        {
+          out << s.v_.t();
+          return out;
+        }
 
-        std::ostream& operator<< (std::ostream& out, const State2_Extended& s);
+        using State2 = State<2>;
+        using State2_Action = State<3>;
+        using State2_Extended = State<4>;
     }
 }
 
@@ -245,14 +224,14 @@ namespace boost
                 }
             };
 
-//            template<>
-//            struct vector_space_norm_inf<Integrators::Geometry::State2_Extended> {
-//                typedef double result_type;
-//                double operator() (const Integrators::Geometry::State2_Extended& s) const
-//                {
-//                  return s.inf_norm();
-//                }
-//            };
+            template<>
+            struct vector_space_norm_inf<Integrators::Geometry::State2_Extended> {
+                typedef double result_type;
+                double operator() (const Integrators::Geometry::State2_Extended& s) const
+                {
+                  return s.inf_norm();
+                }
+            };
         }
     }
 }

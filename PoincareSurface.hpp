@@ -25,7 +25,9 @@ namespace Integrators
       std::pair<Geometry::State2_Action, double> step_back (Geometry::State2_Action s, double t, double current_distance) const
       {
 
-        auto state_extended = Geometry::State2_Extended{s, t};
+        auto state_extended = Geometry::State2_Extended{s};
+
+        state_extended.t()=t;
 
         auto df = [this] (const Geometry::State2_Extended& s_extended, Geometry::State2_Extended& dsdt_extended, double /*time*/)
         {

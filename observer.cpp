@@ -3,7 +3,6 @@
 //
 
 #include "observer.hpp"
-#include <utility>
 #include <boost/math/constants/constants.hpp>
 
 namespace Integrators

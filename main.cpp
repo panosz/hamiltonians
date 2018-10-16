@@ -1,20 +1,14 @@
 #include <iostream>
 #include "line.hpp"
-#include "State.hpp"
 #include "Hamiltonian.hpp"
 #include "dynamic_system.hpp"
 #include "observer.hpp"
 #include "Integration.hpp"
 #include "PoincareSurface.hpp"
 
-#include <boost/math/constants/constants.hpp>
-#include <boost/numeric/odeint.hpp>
 #include <boost/numeric/odeint/iterator/times_time_iterator.hpp>
-#include <boost/range.hpp>
 #include <boost/range/algorithm/find_if.hpp>
 #include "myUtilities.hpp"
-
-#include <armadillo>
 
 using namespace Integrators;
 using namespace Integrators::Geometry;
@@ -26,7 +20,6 @@ using ErrorStepperType_Extended = boost::numeric::odeint::runge_kutta_cash_karp5
     double, boost::numeric::odeint::vector_space_algebra>;
 
 using ControlledStepperType = boost::numeric::odeint::controlled_runge_kutta<ErrorStepperType>;
-
 
 struct IntegrationOptions {
     double abs_err = 1.0e-16;
@@ -110,24 +103,13 @@ inline auto make_init_surface_observer (const PoincareSurfaceType& poincareSurfa
       return poincareSurface.step_back(s, t, current_distance);
   };
 
-  const auto keep_all = [](auto &){return true;};
+  const auto keep_all = [] (auto&)
+  { return true; };
 
-  return Integrators::Observer::makeCrossSurfaceObserver(action_functor, poincareSurface.cross_line(),keep_all, s_out, t_out);
+  return Integrators::Observer::makeCrossSurfaceObserver(action_functor, poincareSurface.cross_line(), keep_all, s_out, t_out);
 }
 
-template<typename Observer, typename IntegrationRange>
-void observe_first (Observer& observer, const IntegrationRange& integration_range)
-{
 
-  boost::range::find_if(integration_range, observer);
-}
-
-template<typename Observer, typename IntegrationRange>
-void observe (Observer& observer, const IntegrationRange& integration_range)
-{
-  for (const auto& s_t: integration_range)
-    observer(s_t);
-}
 
 template<typename Ham>
 std::pair<std::vector<State2_Action>, std::vector<double> >
@@ -136,7 +118,10 @@ calculate_crossings (const Ham& hamiltonian, Geometry::State2 s_start, const Int
 
   const auto poincareSurface = make_PoincareSurface(hamiltonian, s_start, ErrorStepperType_Extended());
 
-  const auto integration_range = make_integration_range(hamiltonian, s_start, options);
+  Geometry::State2_Action s_start_Action{s_start};
+  s_start_Action.J() = 0;
+
+  const auto integration_range = make_integration_range(hamiltonian, s_start_Action, options);
 
   std::vector<Geometry::State2_Action> s_out;
   std::vector<double> t_out;
@@ -152,18 +137,18 @@ std::pair<std::vector<State2_Action>, std::vector<double> >
 calculate_first_crossing (const Ham& hamiltonian, Geometry::State2 s_start, const IntegrationOptions& options)
 {
 
-  const auto poincareSurface = make_PoincareSurface(hamiltonian, s_start,ErrorStepperType_Extended());
+  const auto poincareSurface = make_PoincareSurface(hamiltonian, s_start, ErrorStepperType_Extended());
 
+  Geometry::State2_Action s_start_Action{s_start};
+  s_start_Action.J() = 0;
 
-  Geometry::State2_Action s_start_Action{s_start,0};
-
-   auto integration_range = make_integration_range(hamiltonian, s_start_Action, options);
+  auto integration_range = make_integration_range(hamiltonian, s_start_Action, options);
 
   std::vector<Geometry::State2_Action> s_out;
   std::vector<double> t_out;
   auto observer = make_init_surface_observer(poincareSurface, s_out, t_out);
 
-  observe_first(observer, integration_range);
+  observe_if(observer, integration_range);
 
   return std::make_pair(s_out, t_out);
 }
@@ -195,7 +180,8 @@ int main ()
 //    const auto poincareSurface = make_PoincareSurface(ham, s_start,ErrorStepperType_Extended());
 
 
-    Geometry::State2_Action s_start_Action{s_start,0};
+    Geometry::State2_Action s_start_Action{s_start};
+    s_start_Action.J()=0;
 
     const auto[s_out, t_out] = calculate_first_crossing(ham, s_start, options);
 //
@@ -204,8 +190,8 @@ int main ()
     for (size_t i = 0; i < t_out.size(); ++i)
       std::cout << t_out[i] << " " << s_out[i] << '\n';
 
-
-    State2_Action s2 = s_start;
+    State2_Action s2{s_start};
+    s2.J()=0;
 
     auto times = PanosUtilities::linspace(0.0, t_out[0], 100);
 
@@ -220,8 +206,6 @@ int main ()
       {
         std::cout << s_t.first << " , " << s_t.second << '\n';
       }
-
-
 
     return 0;
   }

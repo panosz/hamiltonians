@@ -9,6 +9,7 @@
 #include "line.hpp"
 #include <vector>
 #include <iostream>
+#include <boost/range/algorithm/find_if.hpp>
 
 namespace Integrators
 {
@@ -30,13 +31,12 @@ namespace Integrators
           size_t every_{};
           mutable size_t count = 0;
          public:
-          PushBackObserver ()  = delete;
+          PushBackObserver () = delete;
           PushBackObserver (const PushBackObserver&) = default;
           PushBackObserver (PushBackObserver&&) noexcept = default;
 
-          PushBackObserver (std::vector<Geometry::State2_Action>& s, std::vector<double>& t,size_t every);
+          PushBackObserver (std::vector<Geometry::State2_Action>& s, std::vector<double>& t, size_t every);
           void operator() (Geometry::State2_Action s, double t);
-
 
         };
 
@@ -51,9 +51,7 @@ namespace Integrators
           PushBackObserver pushBackObserver_;
           FilterObservationPredicate validCrossingPredicate_;
 
-
           double previous_distance_from_surface_{0};
-
 
           bool crossing_detected (double distance_from_surface) const
           {
@@ -68,8 +66,8 @@ namespace Integrators
           bool after_crossing_action (const Geometry::State2_Action& s, double t, double distance)
           {
 
-            const auto [s_out, t_out] = stepOnFunctor_(s, t, distance);
-            if ( validCrossingPredicate_(s_out) )
+            const auto[s_out, t_out] = stepOnFunctor_(s, t, distance);
+            if (validCrossingPredicate_(s_out))
               {
                 pushBackObserver_(s_out, t_out);
                 return true;
@@ -92,17 +90,16 @@ namespace Integrators
             const auto distance = distanceFunctor_(Geometry::State2{s});
 
             if (crossing_detected(distance))
-                crossing_accepted = after_crossing_action(s, t, distance);
-
+              crossing_accepted = after_crossing_action(s, t, distance);
 
             previous_distance_from_surface_ = distance;
             return crossing_accepted;
           }
 
-          bool operator() (const std::pair<Geometry::State2_Action,double>& s_t)
+          bool operator() (const std::pair<Geometry::State2_Action, double>& s_t)
           {
-            const auto& [s,t] = s_t;
-            return operator()(s,t);
+            const auto&[s, t] = s_t;
+            return operator()(s, t);
           }
 
         };
@@ -110,18 +107,48 @@ namespace Integrators
         template<typename StepOnFunctor, typename SurfaceFunctor, typename ValidCrossingPredicate>
         auto makeCrossSurfaceObserver (StepOnFunctor stepOnFunctor, SurfaceFunctor sf, ValidCrossingPredicate vcp,
                                        std::vector<Geometry::State2_Action>& s_out,
-                                       std::vector<double>& t_out, size_t every =0)
+                                       std::vector<double>& t_out, size_t every = 0)
         {
-          PushBackObserver pbo(s_out,t_out,every);
-          return CrossSurfaceObserver<StepOnFunctor, SurfaceFunctor, ValidCrossingPredicate>(stepOnFunctor, sf,pbo, vcp);
+          PushBackObserver pbo(s_out, t_out, every);
+          return CrossSurfaceObserver<StepOnFunctor, SurfaceFunctor, ValidCrossingPredicate>(stepOnFunctor, sf, pbo, vcp);
         }
 
         template<typename StepOnFunctor>
-        auto makeCrossLineObserver (StepOnFunctor stepOnFunctor, const Geometry::Line& line, std::vector<Geometry::State2_Action>& s_out,
-                                    std::vector<double>& t_out, size_t every =0)
+        auto
+        makeCrossLineObserver (StepOnFunctor stepOnFunctor, const Geometry::Line& line, std::vector<Geometry::State2_Action>& s_out,
+                               std::vector<double>& t_out, size_t every = 0)
         {
-          return makeCrossSurfaceObserver(stepOnFunctor, line,[](auto &){return true;},s_out,t_out, every);
+          return makeCrossSurfaceObserver(stepOnFunctor, line, [] (auto&)
+          { return true; }, s_out, t_out, every);
         }
+
+        /// \brief Aplies the observer on the integration_range
+        /// \tparam Observer a type defining a bool operator() (const IntegrationRange::value_type & s_t)
+        /// \tparam IntegrationRange a boost range type
+        /// \param observer
+        /// \param integration_range
+
+        template<typename Observer, typename IntegrationRange>
+        void observe (Observer& observer, const IntegrationRange& integration_range)
+        {
+          for (const auto& s_t: integration_range)
+            observer(s_t);
+        }
+
+
+
+        /// \brief Aplies the observer on the integration_range until the observer returns true
+        /// \tparam Observer a type defining a bool operator() (const IntegrationRange::value_type & s_t)
+        /// \tparam IntegrationRange a boost range type
+        /// \param observer
+        /// \param integration_range
+        template<typename Observer, typename IntegrationRange>
+        void observe_if (Observer& observer, const IntegrationRange& integration_range)
+        {
+
+          boost::range::find_if(integration_range, observer);
+        }
+
 
     }
 }
