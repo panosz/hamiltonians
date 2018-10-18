@@ -16,18 +16,11 @@ namespace Integrators
     namespace Observer
     {
 
-        class NoOpFunctor {
-         public:
-          void operator() (Geometry::State2_Action&, double&)
-          {
-          };
 
-        };
 
         class PushBackObserver {
          private:
-          std::vector<Geometry::State2_Action>& s_;
-          std::vector<double>& t_;
+          std::vector<Geometry::State2_Extended>& s_;
           size_t every_{};
           mutable size_t count = 0;
          public:
@@ -35,8 +28,8 @@ namespace Integrators
           PushBackObserver (const PushBackObserver&) = default;
           PushBackObserver (PushBackObserver&&) noexcept = default;
 
-          PushBackObserver (std::vector<Geometry::State2_Action>& s, std::vector<double>& t, size_t every);
-          void operator() (Geometry::State2_Action s, double t);
+          PushBackObserver (std::vector<Geometry::State2_Extended>& s, size_t every);
+          void operator() (Geometry::State2_Extended s);
 
         };
 
@@ -66,10 +59,10 @@ namespace Integrators
           bool after_crossing_action (const Geometry::State2_Action& s, double t, double distance)
           {
 
-            const auto[s_out, t_out] = stepOnFunctor_(s, t, distance);
-            if (validCrossingPredicate_(s_out))
+            const auto s_out_extended = stepOnFunctor_(s, t, distance);
+            if (validCrossingPredicate_(s_out_extended))
               {
-                pushBackObserver_(s_out, t_out);
+                pushBackObserver_(s_out_extended);
                 return true;
               }
             return false;
@@ -106,20 +99,20 @@ namespace Integrators
 
         template<typename StepOnFunctor, typename SurfaceFunctor, typename ValidCrossingPredicate>
         auto makeCrossSurfaceObserver (StepOnFunctor stepOnFunctor, SurfaceFunctor sf, ValidCrossingPredicate vcp,
-                                       std::vector<Geometry::State2_Action>& s_out,
-                                       std::vector<double>& t_out, size_t every = 0)
+                                       std::vector<Geometry::State2_Extended >& s_out,
+                                        size_t every = 0)
         {
-          PushBackObserver pbo(s_out, t_out, every);
+          PushBackObserver pbo(s_out, every);
           return CrossSurfaceObserver<StepOnFunctor, SurfaceFunctor, ValidCrossingPredicate>(stepOnFunctor, sf, pbo, vcp);
         }
 
         template<typename StepOnFunctor>
         auto
-        makeCrossLineObserver (StepOnFunctor stepOnFunctor, const Geometry::Line& line, std::vector<Geometry::State2_Action>& s_out,
-                               std::vector<double>& t_out, size_t every = 0)
+        makeCrossLineObserver (StepOnFunctor stepOnFunctor, const Geometry::Line& line, std::vector<Geometry::State2_Extended>& s_out,
+                               size_t every = 0)
         {
           return makeCrossSurfaceObserver(stepOnFunctor, line, [] (auto&)
-          { return true; }, s_out, t_out, every);
+          { return true; }, s_out, every);
         }
 
         /// \brief Aplies the observer on the integration_range

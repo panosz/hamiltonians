@@ -51,7 +51,7 @@ namespace Integrators
     };
 
     template<typename DS>
-    std::pair<Geometry::State2_Action, double> step_back (const DS& system,
+    Geometry::State2_Extended step_back (const DS& system,
                                                           const Geometry::State2 direction,
                                                           const Geometry::State2_Action& s,
                                                           double t,
@@ -75,9 +75,7 @@ namespace Integrators
           t,
           -distance);
 
-      const Geometry::State2_Action s_out{state_extended};
-      const double t_out = state_extended.t();
-      return std::make_pair(s_out, t_out);
+      return state_extended;
     }
 
     template<typename DS>
@@ -144,8 +142,7 @@ namespace Integrators
     template<typename DS>
     inline auto make_init_surface_observer (DS system, // not const &. may dangle
                                             const Geometry::Line & cross_line,
-                                            std::vector<Geometry::State2_Action>& s_out,
-                                            std::vector<double>& t_out)
+                                            std::vector<Geometry::State2_Extended>& s_out)
     {
 
       auto action_functor =
@@ -158,7 +155,7 @@ namespace Integrators
       const auto keep_all = [] (auto&)
       { return true; };
 
-      return Observer::makeCrossSurfaceObserver(action_functor, cross_line, keep_all, s_out, t_out);
+      return Observer::makeCrossSurfaceObserver(action_functor, cross_line, keep_all, s_out);
     }
 
 }

@@ -34,7 +34,7 @@ namespace Integrators
           vector_type v_{arma::fill::zeros};
 
          public:
-          State() = default;
+          State () = default;
           State (std::initializer_list<double> l) noexcept
               : v_{l}
           { };
@@ -71,12 +71,11 @@ namespace Integrators
             else
               {
                 v_(arma::span(0, M - 1)) = other.v_;
-                v_(arma::span(M, N-1)).zeros();
+                v_(arma::span(M, N - 1)).zeros();
               }
 
             return *this;
           }
-
 
           double q () const noexcept
           {
@@ -190,7 +189,8 @@ namespace Integrators
         template<unsigned N>
         std::ostream& operator<< (std::ostream& out, const State<N>& s)
         {
-          out << s.v_.t();
+          for (const auto& coord : s.v_)
+            out << coord << ' ';
           return out;
         }
 
