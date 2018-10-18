@@ -32,9 +32,10 @@ namespace Integrators
         auto df = [this] (const Geometry::State2_Extended& s_extended, Geometry::State2_Extended& dsdt_extended, double /*time*/)
         {
 
-            dsdt_extended = Integrators::Dynamics::dynamic_system_along_direction(ham_,
-                                                                                  direction_,
-                                                                                  Geometry::State2_Action{s_extended});
+            dsdt_extended = Integrators::Dynamics::dynamic_system_along_direction_impl(ham_,
+                                                                                       direction_,
+                                                                                       Geometry::State2_Action{
+                                                                                           s_extended});
         };
 
         stepper_.do_step(
@@ -63,7 +64,7 @@ namespace Integrators
     template<typename Ham, typename Stepper>
     inline auto make_PoincareSurface (Ham&& hamiltonian, Geometry::State2 s_start, Stepper&& stepper)
     {
-      const auto start_direction = Integrators::Dynamics::dynamic_system(hamiltonian, s_start);
+      const auto start_direction = Integrators::Dynamics::dynamic_system_impl(hamiltonian, s_start);
 
       const auto start_line = Integrators::Geometry::Line(s_start, start_direction);
       return PoincareSurface<Ham, Stepper>(std::forward<Ham>(hamiltonian), start_line, std::forward<Stepper>(stepper));
