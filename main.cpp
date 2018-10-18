@@ -112,9 +112,8 @@ int main ()
     for (const auto& t:times)
       std::cout << t << '\n';
 
-    const auto system = Dynamics::DynamicSystem(ham);
 
-    auto orbit_range = make_interval_range(system, s2, times, options);
+    auto orbit_range = make_interval_range(Dynamics::DynamicSystem(ham), s2, times, options);
 
     std::cout << "orbit range:\n";
     for (const auto& s_t : orbit_range)

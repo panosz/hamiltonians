@@ -77,21 +77,24 @@ namespace Integrators
 
       const Geometry::State2_Action s_out{state_extended};
       const double t_out = state_extended.t();
-      return std::make_pair(s_out,t_out);
-    };
+      return std::make_pair(s_out, t_out);
+    }
 
     template<typename DS>
     inline auto
-    make_integration_range (const DS& system,
+    make_integration_range (DS system, // not const &, see comment below
                             Geometry::State2_Action& s_start,
                             const IntegrationOptions& options)
     {
 
       const auto controlled_stepper = make_controlled(options.abs_err, options.rel_err, ErrorStepperType());
 
-      auto integration_functor = [&system] (const Geometry::State2_Action& s, Geometry::State2_Action& dsdt, double /*t*/)
+
+      //system should be passed by value to the closure, because integration_functor is coppied into the output range
+      //and reference may dangle
+      auto integration_functor = [sys = std::move(system)] (const Geometry::State2_Action& s, Geometry::State2_Action& dsdt, double /*t*/)
       {
-          dsdt = system.dynamic_system_Action(s);
+          dsdt = sys.dynamic_system_Action(s);
       };
 
       return boost::make_iterator_range(
@@ -105,7 +108,7 @@ namespace Integrators
 
     template<typename DS>
     inline auto
-    make_interval_range (const DS& system,
+    make_interval_range (DS system,   // not const &, see comment below
                          Geometry::State2_Action& s_start,
                          const std::vector<double>& times,
                          const IntegrationOptions& options)
@@ -113,9 +116,14 @@ namespace Integrators
 
       const auto controlled_stepper = make_controlled(options.abs_err, options.rel_err, ErrorStepperType());
 
-      auto integration_functor = [&system] (const Geometry::State2_Action& s, Geometry::State2_Action& dsdt, double /*t*/)
+
+      //system should be passed by value to the closure, because integration_functor is coppied into the output range
+      //and reference may dangle
+
+      auto integration_functor = [sys = std::move(system)]
+          (const Geometry::State2_Action& s, Geometry::State2_Action& dsdt, double /*t*/)
       {
-          dsdt = system.dynamic_system_Action(s);
+          dsdt = sys.dynamic_system_Action(s);
       };
 
       return boost::make_iterator_range(
@@ -134,15 +142,18 @@ namespace Integrators
     }
 
     template<typename DS>
-    inline auto make_init_surface_observer (const DS& system,
-                                            const Geometry::Line& cross_line,
+    inline auto make_init_surface_observer (DS system, // not const &. may dangle
+                                            const Geometry::Line & cross_line,
                                             std::vector<Geometry::State2_Action>& s_out,
                                             std::vector<double>& t_out)
     {
-      auto action_functor = [&system, &cross_line] (Geometry::State2_Action s, double t, double current_distance)
-      {
-          return step_back(system, cross_line.perpendicular_vector(), s, t, current_distance);
-      };
+
+      auto action_functor =
+          [sys = std::move(system), direction = cross_line.perpendicular_vector()]
+              (Geometry::State2_Action s, double t, double current_distance)
+          {
+              return step_back(sys, direction, s, t, current_distance);
+          };
 
       const auto keep_all = [] (auto&)
       { return true; };
