@@ -19,11 +19,15 @@ namespace Integrators
               }
 
         }
-        PushBackObserver::PushBackObserver (std::vector<Geometry::State2_Extended>& s, size_t every)
-            :s_{s},
+        PushBackObserver::PushBackObserver ( size_t every)
+            :
             every_{every > 0 ? every : 1}
         {
 
+        }
+        std::vector<PushBackObserver::value_type> PushBackObserver::observations () const noexcept
+        {
+          return s_;
         }
 
         bool crossZeroPositiveDirectionPredicate (double current_value, double previous_value)

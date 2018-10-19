@@ -141,8 +141,7 @@ namespace Integrators
 
     template<typename DS>
     inline auto make_cross_line_observer (DS system, // not const &. may dangle
-                                          const Geometry::Line& cross_line,
-                                          std::vector<Geometry::State2_Extended>& s_out)
+                                          const Geometry::Line& cross_line)
     {
 
       auto action_functor =
@@ -155,7 +154,7 @@ namespace Integrators
       const auto keep_all = [] (auto&)
       { return true; };
 
-      return Observer::makeCrossSurfaceObserver(action_functor, cross_line, keep_all, s_out);
+      return Observer::makeCrossSurfaceObserver(action_functor, cross_line, keep_all);
     }
 
 }

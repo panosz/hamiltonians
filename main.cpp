@@ -50,20 +50,18 @@ class StateNear {
 
 template<typename Ham>
 std::vector<State2_Extended>
-calculate_crossings (const Ham& hamiltonian, Geometry::State2 s_start, const Geometry::Line& cross_line, const IntegrationOptions& options)
+calculate_crossings (const Ham& hamiltonian, const Geometry::State2& s_start, const Geometry::Line& cross_line, const IntegrationOptions& options)
 {
-
-  std::vector<Geometry::State2_Extended> s_out;
 
   Geometry::State2_Action s_start_Action{s_start};
 
   const auto system = Dynamics::DynamicSystem{hamiltonian};
   const auto integration_range = Integrators::make_dynamic_system_integration_range(system, s_start_Action, options);
 
-  auto observer = Integrators::make_cross_line_observer(system, cross_line, s_out);
+  auto observer = Integrators::make_cross_line_observer(system, cross_line);
   observe(observer, integration_range);
 
-  return s_out;
+  return observer.observations();
 }
 
 template<typename Ham>
@@ -73,17 +71,16 @@ calculate_first_crossing (const Ham& hamiltonian,
                           const Geometry::Line& cross_line,
                           const IntegrationOptions& options)
 {
-  std::vector<Geometry::State2_Extended> s_out{};
 
   const auto system = Dynamics::DynamicSystem{hamiltonian};
   Geometry::State2_Action s_start_Action{s_start};
 
   const auto integration_range = Integrators::make_dynamic_system_integration_range(system, s_start_Action, options);
 
-  auto observer = Integrators::make_cross_line_observer(system, cross_line, s_out);
+  auto observer = Integrators::make_cross_line_observer(system, cross_line);
   observe_if(observer, integration_range);
 
-  return s_out;
+  return observer.observations();
 }
 
 

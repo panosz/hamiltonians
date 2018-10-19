@@ -19,17 +19,21 @@ namespace Integrators
 
 
         class PushBackObserver {
+         public:
+          using value_type = Geometry::State2_Extended;
          private:
-          std::vector<Geometry::State2_Extended>& s_;
-          size_t every_{};
+
+          std::vector<value_type> s_{};
+          size_t every_ = 1;
           mutable size_t count = 0;
          public:
-          PushBackObserver () = delete;
+          PushBackObserver () =default;
           PushBackObserver (const PushBackObserver&) = default;
           PushBackObserver (PushBackObserver&&) noexcept = default;
 
-          PushBackObserver (std::vector<Geometry::State2_Extended>& s, size_t every);
-          void operator() (Geometry::State2_Extended s);
+          explicit PushBackObserver (size_t every);
+          void operator() (value_type s);
+          std::vector<value_type> observations() const noexcept;
 
         };
 
@@ -95,24 +99,27 @@ namespace Integrators
             return operator()(s, t);
           }
 
+          auto observations() const noexcept
+          {
+            return pushBackObserver_.observations();
+          }
         };
 
         template<typename StepOnFunctor, typename SurfaceFunctor, typename ValidCrossingPredicate>
         auto makeCrossSurfaceObserver (StepOnFunctor stepOnFunctor, SurfaceFunctor sf, ValidCrossingPredicate vcp,
-                                       std::vector<Geometry::State2_Extended >& s_out,
                                         size_t every = 0)
         {
-          PushBackObserver pbo(s_out, every);
+          PushBackObserver pbo(every);
           return CrossSurfaceObserver<StepOnFunctor, SurfaceFunctor, ValidCrossingPredicate>(stepOnFunctor, sf, pbo, vcp);
         }
 
         template<typename StepOnFunctor>
         auto
-        makeCrossLineObserver (StepOnFunctor stepOnFunctor, const Geometry::Line& line, std::vector<Geometry::State2_Extended>& s_out,
+        makeCrossLineObserver (StepOnFunctor stepOnFunctor, const Geometry::Line& line,
                                size_t every = 0)
         {
           return makeCrossSurfaceObserver(stepOnFunctor, line, [] (auto&)
-          { return true; }, s_out, every);
+          { return true; }, every);
         }
 
         /// \brief Aplies the observer on the integration_range
@@ -139,7 +146,7 @@ namespace Integrators
         void observe_if (Observer& observer, const IntegrationRange& integration_range)
         {
 
-          boost::range::find_if(integration_range, observer);
+          boost::range::find_if(integration_range, std::ref(observer));
         }
 
 
