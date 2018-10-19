@@ -100,10 +100,20 @@ int main ()
 
   options.set_integration_time(100.0);
 
-//  Geometry::State2_Action s_start_Action{s_start};
-//  const auto integration_range = Integrators::make_dynamic_system_integration_range(system, s_start_Action, options);
+  Geometry::State2_Action s_start_Action{s_start};
+  const auto integration_range = Integrators::make_dynamic_system_integration_range(system, s_start_Action, options);
 
-  const auto s_out_extended = calculate_first_crossing(hamiltonian, s_start, cross_line, options);
+  auto cross_line_observer = Integrators::make_cross_line_observer(system, cross_line, [] (auto&) { return true; });
+  observe_if(cross_line_observer, integration_range);
+
+
+  auto back_home_observer = Integrators::make_cross_line_observer(system, cross_line,
+                                                                  [s_home = s_start] (auto & s)
+                                                                  { return StateNear(1e-8)(s_home,s); });
+  s_start_Action = Geometry::State2_Action{s_start};
+  observe_if(back_home_observer, integration_range);
+
+  const auto s_out_extended = back_home_observer.observations();//= calculate_first_crossing(hamiltonian, s_start, cross_line, options);
 //
   std::cout << "adaptive integration output:\n";
 

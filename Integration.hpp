@@ -139,9 +139,10 @@ namespace Integrators
       return Integrators::Geometry::Line(s_start, start_direction);
     }
 
-    template<typename DS>
+    template<typename DS, typename FP>
     inline auto make_cross_line_observer (DS system, // not const &. may dangle
-                                          const Geometry::Line& cross_line)
+                                          const Geometry::Line& cross_line,
+                                         FP filteringPredicate)
     {
 
       auto action_functor =
@@ -151,10 +152,9 @@ namespace Integrators
               return step_back(sys, direction, s, t, current_distance);
           };
 
-      const auto keep_all = [] (auto&)
-      { return true; };
 
-      return Observer::makeCrossSurfaceObserver(action_functor, cross_line, keep_all);
+
+      return Observer::makeCrossSurfaceObserver(action_functor, cross_line, filteringPredicate);
     }
 
 }
