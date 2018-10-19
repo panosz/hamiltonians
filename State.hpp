@@ -187,6 +187,12 @@ namespace Integrators
         }
 
         template<unsigned N>
+        double magnitude(const State<N>& s) noexcept
+        {
+          return std::sqrt(magnitude_squared<N>(s));
+        }
+
+        template<unsigned N>
         std::ostream& operator<< (std::ostream& out, const State<N>& s)
         {
           for (const auto& coord : s.v_)

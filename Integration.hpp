@@ -80,9 +80,9 @@ namespace Integrators
 
     template<typename DS>
     inline auto
-    make_integration_range (DS system, // not const &, see comment below
-                            Geometry::State2_Action& s_start,
-                            const IntegrationOptions& options)
+    make_dynamic_system_integration_range (DS system, // not const &, see comment below
+                                           Geometry::State2_Action& s_start,
+                                           const IntegrationOptions& options)
     {
 
       const auto controlled_stepper = make_controlled(options.abs_err, options.rel_err, ErrorStepperType());
@@ -140,9 +140,9 @@ namespace Integrators
     }
 
     template<typename DS>
-    inline auto make_init_surface_observer (DS system, // not const &. may dangle
-                                            const Geometry::Line & cross_line,
-                                            std::vector<Geometry::State2_Extended>& s_out)
+    inline auto make_cross_line_observer (DS system, // not const &. may dangle
+                                          const Geometry::Line& cross_line,
+                                          std::vector<Geometry::State2_Extended>& s_out)
     {
 
       auto action_functor =
