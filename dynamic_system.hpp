@@ -81,7 +81,7 @@ namespace Integrators
         {
           Ham ham_;
          public:
-          DynamicSystem (Ham ham)
+          explicit DynamicSystem (Ham ham)
               : ham_(ham)
           {
           }
@@ -103,6 +103,9 @@ namespace Integrators
 
 
         };
+
+        extern template class DynamicSystem<Hamiltonian::HarmonicOscillator>;
+        extern template class DynamicSystem<Hamiltonian::DuffingHamiltonian>;
     }
 }
 

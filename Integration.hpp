@@ -15,13 +15,14 @@
 
 namespace Integrators
 {
-    using ErrorStepperType = boost::numeric::odeint::runge_kutta_cash_karp54<Geometry::State2_Action, double, Geometry::State2_Action,
+    template< typename StateType>
+    using ErrorStepperType = boost::numeric::odeint::runge_kutta_cash_karp54<StateType, double, StateType,
         double, boost::numeric::odeint::vector_space_algebra>;
 
-    using ErrorStepperType_Extended = boost::numeric::odeint::runge_kutta_cash_karp54<Geometry::State2_Extended, double, Geometry::State2_Extended,
-        double, boost::numeric::odeint::vector_space_algebra>;
+    template<typename StateType>
+    using ControlledStepperType = boost::numeric::odeint::controlled_runge_kutta<ErrorStepperType< StateType> >;
 
-    using ControlledStepperType = boost::numeric::odeint::controlled_runge_kutta<ErrorStepperType>;
+
 
     struct IntegrationOptions {
         double abs_err = 1.0e-16;
@@ -63,6 +64,7 @@ namespace Integrators
                                                           double t,
                                                           double distance)
     {
+      using ErrorStepperType_Extended = ErrorStepperType<Geometry::State2_Extended >;
 
       auto state_extended = Geometry::State2_Extended{s};
 
@@ -91,7 +93,9 @@ namespace Integrators
                                            const IntegrationOptions& options)
     {
 
-      const auto controlled_stepper = make_controlled(options.abs_err, options.rel_err, ErrorStepperType());
+      const auto controlled_stepper = make_controlled(options.abs_err,
+                                                      options.rel_err,
+                                                      ErrorStepperType<Geometry::State2_Action >());
 
 
       //system should be passed by value to the closure, because integration_functor is coppied into the output range
@@ -118,7 +122,9 @@ namespace Integrators
                          const IntegrationOptions& options)
     {
 
-      const auto controlled_stepper = make_controlled(options.abs_err, options.rel_err, ErrorStepperType());
+      const auto controlled_stepper = make_controlled(options.abs_err,
+                                                      options.rel_err,
+                                                      ErrorStepperType<Geometry::State2_Action>());
 
 
       //system should be passed by value to the closure, because integration_functor is coppied into the output range
@@ -136,6 +142,36 @@ namespace Integrators
                                                         s_start, times.begin(), times.end(), options.initial_time_step));
 
     }
+
+    template<typename DS>
+    inline auto
+    make_interval_range (DS system,   // not const &, see comment below
+                         Geometry::State2& s_start,
+                         const std::vector<double>& times,
+                         const IntegrationOptions& options)
+    {
+
+      const auto controlled_stepper = make_controlled(options.abs_err,
+                                                      options.rel_err,
+                                                      ErrorStepperType<Geometry::State2>());
+
+
+      //system should be passed by value to the closure, because integration_functor is coppied into the output range
+      //and reference may dangle
+
+      auto integration_functor = [sys = std::move(system)]
+          (const Geometry::State2& s, Geometry::State2& dsdt, double /*t*/)
+      {
+          dsdt = sys.dynamic_system(s);
+      };
+
+      return boost::make_iterator_range(
+          boost::numeric::odeint::make_times_time_range(controlled_stepper,
+                                                        integration_functor,
+                                                        s_start, times.begin(), times.end(), options.initial_time_step));
+
+    }
+
 
     template<typename DS>
     Geometry::Line make_init_cross_line (const DS& system, Geometry::State2 s_start)
@@ -213,7 +249,7 @@ namespace Integrators
     }
 
     template<typename Ham>
-    std::vector<Geometry::State2_Extended>
+    Geometry::State2_Extended
     calculate_first_crossing (const Ham& hamiltonian,
                               const Geometry::State2& s_start,
                               const Geometry::Line& cross_line,
@@ -230,8 +266,13 @@ namespace Integrators
 
       observe_if(observer, integration_range);
 
-      return observer.observations();
-    }
+      const auto observations = observer.observations();
+
+      if (observations.empty())
+        throw std::runtime_error("orbit never came back");
+
+      return observations.front();
+      }
 
     template<typename Ham>
     Geometry::State2_Extended

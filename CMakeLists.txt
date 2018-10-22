@@ -9,7 +9,7 @@ find_package(Armadillo REQUIRED)
 
 find_package(myUtilities REQUIRED)
 
-add_executable(hamiltonians main.cpp line.cpp line.hpp State.cpp State.hpp Hamiltonian.cpp Hamiltonian.hpp dynamic_system.hpp observer.cpp observer.hpp Integration.cpp Integration.hpp PoincareSurface.hpp)
+add_executable(hamiltonians main.cpp line.cpp line.hpp State.cpp State.hpp Hamiltonian.cpp Hamiltonian.hpp dynamic_system.hpp observer.cpp observer.hpp Integration.cpp Integration.hpp PoincareSurface.hpp dynamic_system.cpp)
 
 target_link_libraries(hamiltonians Boost::boost myUtilities::myUtilities armadillo)
 
