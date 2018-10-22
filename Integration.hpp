@@ -28,6 +28,7 @@ namespace Integrators
         double rel_err = 1.0e-14;
         double integration_time = 0;
         double initial_time_step = 1e-5;
+        double distance_threshold = 1.0e-13;
 
         IntegrationOptions () = default;
 
@@ -46,6 +47,11 @@ namespace Integrators
         void set_initial_time_step (double dt_init)
         {
           initial_time_step = dt_init;
+        }
+
+        void set_distance_threshold (double ds)
+        {
+          distance_threshold = ds;
         }
 
     };
@@ -157,5 +163,110 @@ namespace Integrators
       return Observer::makeCrossSurfaceObserver(action_functor, cross_line, filteringPredicate);
     }
 
+
+    class StateNear {
+      double distance_;
+      bool are_near (const Geometry::State2& s1, const Geometry::State2& s2) const noexcept
+      {
+        return magnitude(s1 - s2) <= distance_;
+      }
+     public:
+      explicit StateNear (double distance)
+          : distance_(distance)
+      { }
+
+      bool operator() (const Geometry::State2& s1, const Geometry::State2& s2) const noexcept
+      {
+        return are_near(s1, s2);
+      }
+
+      bool operator() (const Geometry::State2_Extended& s1, const Geometry::State2& s2) const noexcept
+      {
+        return are_near(Geometry::State2{s1}, s2);
+      }
+
+      bool operator() (const Geometry::State2& s1, const Geometry::State2_Extended& s2) const noexcept
+      {
+        return are_near(s1, Geometry::State2{s2});
+      }
+
+    };
+
+    template<typename Ham>
+    std::vector<Geometry::State2_Extended>
+    calculate_crossings (const Ham& hamiltonian,
+                         const Geometry::State2& s_start,
+                         const Geometry::Line& cross_line,
+                         const IntegrationOptions& options)
+    {
+
+      Geometry::State2_Action s_start_Action{s_start};
+
+      const auto system = Dynamics::DynamicSystem{hamiltonian};
+      const auto integration_range = Integrators::make_dynamic_system_integration_range(system, s_start_Action, options);
+
+      auto observer = Integrators::make_cross_line_observer(system, cross_line, [] (auto&)
+      { return true; });
+      observe(observer, integration_range);
+
+      return observer.observations();
+    }
+
+    template<typename Ham>
+    std::vector<Geometry::State2_Extended>
+    calculate_first_crossing (const Ham& hamiltonian,
+                              const Geometry::State2& s_start,
+                              const Geometry::Line& cross_line,
+                              const IntegrationOptions& options)
+    {
+
+      const auto system = Dynamics::DynamicSystem{hamiltonian};
+      Geometry::State2_Action s_start_Action{s_start};
+
+      const auto integration_range = Integrators::make_dynamic_system_integration_range(system, s_start_Action, options);
+
+      auto observer = Integrators::make_cross_line_observer(system, cross_line, [] (auto&)
+      { return true; });
+
+      observe_if(observer, integration_range);
+
+      return observer.observations();
+    }
+
+    template<typename Ham>
+    Geometry::State2_Extended
+    come_back_home (const Ham& hamiltonian,
+                    const Geometry::State2& s_start,
+                    const IntegrationOptions& options)
+    {
+      const auto system = Dynamics::DynamicSystem{hamiltonian};
+
+      const auto cross_line = make_init_cross_line(system, s_start);
+
+      const auto is_back_predicate =
+          [&s_home = s_start,
+           & distance_threshold = options.distance_threshold] (auto& s)
+          {
+              return StateNear(distance_threshold)(s_home, s);
+          };
+
+      auto back_home_observer = Integrators::make_cross_line_observer(system,
+                                                                      cross_line,
+                                                                      is_back_predicate);
+
+      Geometry::State2_Action s_start_Action{s_start};
+
+      const auto integration_range = Integrators::make_dynamic_system_integration_range(system, s_start_Action, options);
+
+      observe_if(back_home_observer, integration_range);
+
+      const auto observations = back_home_observer.observations();
+
+      if (observations.empty())
+        throw std::runtime_error("orbit never came back");
+
+      return observations.front();
+
+    }
 }
 #endif //HAMILTONIANS_INTEGRATION_HPP
