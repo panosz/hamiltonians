@@ -9,7 +9,8 @@ find_package(Armadillo REQUIRED)
 
 find_package(myUtilities REQUIRED)
 
-add_executable(hamiltonians main.cpp line.cpp line.hpp State.cpp State.hpp Hamiltonian.cpp Hamiltonian.hpp dynamic_system.hpp observer.cpp observer.hpp Integration.cpp Integration.hpp PoincareSurface.hpp dynamic_system.cpp)
+add_library(hamiltonians line.cpp line.hpp State.cpp State.hpp Hamiltonian.cpp Hamiltonian.hpp dynamic_system.hpp observer.cpp observer.hpp Integration.cpp Integration.hpp PoincareSurface.hpp dynamic_system.cpp action_angle.cpp action_angle.hpp)
+
 
 target_link_libraries(hamiltonians Boost::boost myUtilities::myUtilities armadillo)
 
@@ -29,3 +30,8 @@ target_compile_options(hamiltonians
         -march=native
         >
         )
+
+add_executable(duffing_example main.cpp)
+target_link_libraries(duffing_example hamiltonians myUtilities::myUtilities Boost::boost)
+
+add_executable(pentulum_numeric pendulum_example.cpp)
