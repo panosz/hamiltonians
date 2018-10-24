@@ -40,7 +40,7 @@ namespace Integrators
         bool crossZeroPositiveDirectionPredicate (double current_value, double previous_value);
 
         template<typename StepOnFunctor, typename DistanceFunctor, typename FilterObservationPredicate>
-        class CrossSurfaceObserver {
+        class ProjectOnSurfaceObserver {
          private:
 
           StepOnFunctor stepOnFunctor_;
@@ -72,9 +72,9 @@ namespace Integrators
             return false;
           }
          public:
-          CrossSurfaceObserver () = delete;
+          ProjectOnSurfaceObserver () = delete;
 
-          CrossSurfaceObserver (StepOnFunctor af, DistanceFunctor sf, PushBackObserver pbo, FilterObservationPredicate fop)
+          ProjectOnSurfaceObserver (StepOnFunctor af, DistanceFunctor sf, PushBackObserver pbo, FilterObservationPredicate fop)
               : stepOnFunctor_{std::move(af)},
                 distanceFunctor_{std::move(sf)},
                 pushBackObserver_{pbo},
@@ -106,19 +106,19 @@ namespace Integrators
         };
 
         template<typename StepOnFunctor, typename SurfaceFunctor, typename ValidCrossingPredicate>
-        auto makeCrossSurfaceObserver (StepOnFunctor stepOnFunctor, SurfaceFunctor sf, ValidCrossingPredicate vcp,
-                                        size_t every = 0)
+        auto makeProjectOnSurfaceObserver (StepOnFunctor stepOnFunctor, SurfaceFunctor sf, ValidCrossingPredicate vcp,
+                                           size_t every = 0)
         {
           PushBackObserver pbo(every);
-          return CrossSurfaceObserver<StepOnFunctor, SurfaceFunctor, ValidCrossingPredicate>(stepOnFunctor, sf, pbo, vcp);
+          return ProjectOnSurfaceObserver<StepOnFunctor, SurfaceFunctor, ValidCrossingPredicate>(stepOnFunctor, sf, pbo, vcp);
         }
 
         template<typename StepOnFunctor>
         auto
-        makeCrossLineObserver (StepOnFunctor stepOnFunctor, const Geometry::Line& line,
-                               size_t every = 0)
+        makeProjectOnLineObserver (StepOnFunctor stepOnFunctor, const Geometry::Line& line,
+                                   size_t every = 0)
         {
-          return makeCrossSurfaceObserver(stepOnFunctor, line, [] (auto&)
+          return makeProjectOnSurfaceObserver(stepOnFunctor, line, [] (auto&)
           { return true; }, every);
         }
 

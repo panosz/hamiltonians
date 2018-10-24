@@ -196,7 +196,7 @@ namespace Integrators
 
 
 
-      return Observer::makeCrossSurfaceObserver(action_functor, cross_line, filteringPredicate);
+      return Observer::makeProjectOnSurfaceObserver(action_functor, cross_line, filteringPredicate);
     }
 
 
