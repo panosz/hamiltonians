@@ -39,21 +39,15 @@ namespace Integrators
 
         bool crossZeroPositiveDirectionPredicate (double current_value, double previous_value);
 
-        template<typename StepOnFunctor, typename DistanceFunctor, typename FilterObservationPredicate>
+        template<typename StepOnFunctor, typename SurfaceCrossObserver, typename FilterObservationPredicate>
         class ProjectOnSurfaceObserver {
          private:
 
           StepOnFunctor stepOnFunctor_;
-          DistanceFunctor distanceFunctor_;
+          SurfaceCrossObserver surfaceCrossObserver_;
           PushBackObserver pushBackObserver_;
           FilterObservationPredicate validCrossingPredicate_;
 
-          double previous_distance_from_surface_{0};
-
-          bool crossing_detected (double distance_from_surface) const
-          {
-            return crossZeroPositiveDirectionPredicate(distance_from_surface, previous_distance_from_surface_);
-          }
 
           /// \brief carries out the necessary operations after a crossing has been detected
           /// \param s the current position
@@ -74,9 +68,9 @@ namespace Integrators
          public:
           ProjectOnSurfaceObserver () = delete;
 
-          ProjectOnSurfaceObserver (StepOnFunctor af, DistanceFunctor sf, PushBackObserver pbo, FilterObservationPredicate fop)
+          ProjectOnSurfaceObserver (StepOnFunctor af, SurfaceCrossObserver sf, PushBackObserver pbo, FilterObservationPredicate fop)
               : stepOnFunctor_{std::move(af)},
-                distanceFunctor_{std::move(sf)},
+                surfaceCrossObserver_{std::move(sf)},
                 pushBackObserver_{pbo},
                 validCrossingPredicate_{fop}
           { };
@@ -84,12 +78,10 @@ namespace Integrators
           bool operator() (const Geometry::State2_Action& s, double t)
           {
             bool crossing_accepted = false;
-            const auto distance = distanceFunctor_(Geometry::State2{s});
 
-            if (crossing_detected(distance))
-              crossing_accepted = after_crossing_action(s, t, distance);
+            if (surfaceCrossObserver_(Geometry::State2{s}))
+              crossing_accepted = after_crossing_action(s, t, surfaceCrossObserver_.distance());
 
-            previous_distance_from_surface_ = distance;
             return crossing_accepted;
           }
 
@@ -118,7 +110,7 @@ namespace Integrators
         makeProjectOnLineObserver (StepOnFunctor stepOnFunctor, const Geometry::Line& line,
                                    size_t every = 0)
         {
-          return makeProjectOnSurfaceObserver(stepOnFunctor, line, [] (auto&)
+          return makeProjectOnSurfaceObserver(stepOnFunctor, Geometry::LineCrossObserver(line), [] (auto&)
           { return true; }, every);
         }
 

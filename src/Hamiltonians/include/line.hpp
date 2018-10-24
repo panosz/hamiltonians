@@ -28,6 +28,16 @@ namespace Integrators
         };
 
         std::ostream& operator<< (std::ostream&, const Line&);
+
+        class LineCrossObserver
+        {
+          Line line_;
+          mutable double distance_=0;
+         public:
+          explicit LineCrossObserver (Line line) noexcept ;
+          bool operator()(const State2& next_point) const noexcept ;
+          double distance() const noexcept ;
+        };
     }
 
 }

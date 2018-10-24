@@ -182,13 +182,13 @@ namespace Integrators
     }
 
     template<typename DS, typename FP>
-    inline auto make_cross_line_observer (DS system, // not const &. may dangle
-                                          const Geometry::Line& cross_line,
-                                         FP filteringPredicate)
+    inline auto make_project_on_line_observer (DS system, // not const &. may dangle
+                                               const Geometry::Line& line,
+                                               FP filteringPredicate)
     {
 
       auto action_functor =
-          [sys = std::move(system), direction = cross_line.perpendicular_vector()]
+          [sys = std::move(system), direction = line.perpendicular_vector()]
               (Geometry::State2_Action s, double t, double current_distance)
           {
               return step_back(sys, direction, s, t, current_distance);
@@ -196,7 +196,7 @@ namespace Integrators
 
 
 
-      return Observer::makeProjectOnSurfaceObserver(action_functor, cross_line, filteringPredicate);
+      return Observer::makeProjectOnSurfaceObserver(action_functor, Geometry::LineCrossObserver(line), filteringPredicate);
     }
 
 
@@ -241,7 +241,7 @@ namespace Integrators
       const auto system = Dynamics::DynamicSystem{hamiltonian};
       const auto integration_range = Integrators::make_dynamic_system_integration_range(system, s_start_Action, options);
 
-      auto observer = Integrators::make_cross_line_observer(system, cross_line, [] (auto&)
+      auto observer = Integrators::make_project_on_line_observer(system, cross_line, [] (auto&)
       { return true; });
       observe(observer, integration_range);
 
@@ -261,7 +261,7 @@ namespace Integrators
 
       const auto integration_range = Integrators::make_dynamic_system_integration_range(system, s_start_Action, options);
 
-      auto observer = Integrators::make_cross_line_observer(system, cross_line, [] (auto&)
+      auto observer = Integrators::make_project_on_line_observer(system, cross_line, [] (auto&)
       { return true; });
 
       observe_if(observer, integration_range);
@@ -291,9 +291,9 @@ namespace Integrators
               return StateNear(distance_threshold)(s_home, s);
           };
 
-      auto back_home_observer = Integrators::make_cross_line_observer(system,
-                                                                      cross_line,
-                                                                      is_back_predicate);
+      auto back_home_observer = Integrators::make_project_on_line_observer(system,
+                                                                           cross_line,
+                                                                           is_back_predicate);
 
       Geometry::State2_Action s_start_Action{s_start};
 

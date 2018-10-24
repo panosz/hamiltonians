@@ -42,5 +42,28 @@ namespace Integrators
           return s_;
         }
 
+        LineCrossObserver::LineCrossObserver (Line line) noexcept
+            : line_(std::move(line))
+        { }
+
+
+        inline bool crossZeroPositiveDirectionPredicate (double current_value, double previous_value)
+        {
+          return (current_value >= 0 && previous_value< 0);
+        }
+
+
+        bool LineCrossObserver::operator() (const State2& next_point) const noexcept
+        {
+          const double next_distance = line_(next_point);
+          const bool crossed_line = crossZeroPositiveDirectionPredicate(next_distance,distance_);
+          distance_ = next_distance;
+          return crossed_line;
+        }
+        double LineCrossObserver::distance () const noexcept
+        {
+          return distance_;
+        }
+
     }
 }
