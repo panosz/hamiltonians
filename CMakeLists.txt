@@ -1,37 +1,79 @@
 cmake_minimum_required(VERSION 3.12)
-project(hamiltonians)
+project(Hamiltonians VERSION 0.10)
 
 set(CMAKE_CXX_STANDARD 17)
 
-find_package(Boost REQUIRED)
+# Offer the user the choice of overriding the googlemock directory
+set(GOOGLEMOCK_DIR $ENV{GMOCK_DIR} CACHE PATH "googlemock directory")
+set(GOOGLETEST_DIR $ENV{GTEST_DIR} CACHE PATH "googletest directory")
 
-find_package(Armadillo REQUIRED)
+# Offer the user the choice of overriding the installation directories
+set(INSTALL_LIB_DIR lib CACHE PATH "Installation directory for libraries")
+set(INSTALL_BIN_DIR bin CACHE PATH "Installation directory for executables")
+#set(INSTALL_INCLUDE_DIR include CACHE PATH
+#  "Installation directory for header files")
 
-find_package(myUtilities REQUIRED)
-
-add_library(hamiltonians line.cpp line.hpp State.cpp State.hpp Hamiltonian.cpp Hamiltonian.hpp dynamic_system.hpp observer.cpp observer.hpp Integration.cpp Integration.hpp PoincareSurface.hpp dynamic_system.cpp action_angle.cpp action_angle.hpp)
 
 
-target_link_libraries(hamiltonians Boost::boost myUtilities::myUtilities armadillo)
 
-target_compile_options(hamiltonians
-        PRIVATE
-        -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic
-        -Weffc++ -Wold-style-cast -Wcast-align -Wunused -Woverloaded-virtual
-        -Wconversion -Wsign-conversion -Wmisleading-indentation
-        -Wduplicated-cond
-        #-Wduplicated-branches
-        -Wlogical-op
-        -Wnull-dereference -Wuseless-cast -Wdouble-promotion
-        -Wformat=2
 
-        $<$<CONFIG:Release>:
-        -O2
-        -march=native
-        >
+# The interesting stuff goes here
+# ===============================
+
+# add the project subdirectories
+#
+
+
+include(GNUInstallDirs)
+set(INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
+
+
+add_subdirectory(${PROJECT_SOURCE_DIR}/src/${PROJECT_NAME})
+
+## Install the export set for use with the install-tree
+install(EXPORT ${PROJECT_NAME}Targets
+        FILE
+        ${PROJECT_NAME}Targets.cmake
+        NAMESPACE
+        ${PROJECT_NAME}::
+        DESTINATION
+        ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
+
+#Create a ConfigVersion.cmake file
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+        ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
+        VERSION ${PROJECT_VERSION}
+        COMPATIBILITY AnyNewerVersion
+)
+
+
+configure_package_config_file (${PROJECT_NAME}Config.cmake.in
+        ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+        INSTALL_DESTINATION ${INSTALL_CONFIGDIR} )
+
+
+#Install the config and configversion files
+install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
+        DESTINATION ${INSTALL_CONFIGDIR}
         )
 
-add_executable(duffing_example main.cpp)
-target_link_libraries(duffing_example hamiltonians myUtilities::myUtilities Boost::boost)
 
-add_executable(pentulum_numeric pendulum_example.cpp)
+#############################################
+## Exporting from the build tree
+
+
+export(EXPORT ${PROJECT_NAME}Targets FILE ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Targets.cmake NAMESPACE ${PROJECT_NAME}::)
+
+
+#Register package in user's package registry
+export(PACKAGE ${PROJECT_NAME})
+
+#add tests
+add_subdirectory(${PROJECT_SOURCE_DIR}/src/tests)
+
+#add examples
+add_subdirectory(${PROJECT_SOURCE_DIR}/src/examples)
+

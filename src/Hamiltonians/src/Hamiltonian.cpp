@@ -2,7 +2,7 @@
 // Created by Panagiotis Zestanakis on 03/10/18.
 //
 #include <boost/math/special_functions/pow.hpp>
-
+#include <cmath>
 #include "Hamiltonian.hpp"
 namespace Integrators
 {
@@ -79,6 +79,39 @@ namespace Integrators
 
           return Geometry::State2{dHdq,dHdp};
 
+        }
+
+        PendulumHamiltonian::PendulumHamiltonian (double FF, double GG)
+            : F_(FF), G_(GG)
+        { }
+        double PendulumHamiltonian::F () const noexcept
+        {
+          return F_;
+        }
+        double PendulumHamiltonian::G () const noexcept
+        {
+          return G_;
+        }
+
+
+        double PendulumHamiltonian::value (const Geometry::State2& s) const noexcept
+        {
+          using boost::math::pow;
+          using std::cos;
+
+          const auto q = s.q();
+          const auto p = s.p();
+
+          return 0.5*G_*pow<2>(p) - F_*cos(q);
+        }
+        Geometry::State2 PendulumHamiltonian::derivative (const Geometry::State2& s) const noexcept
+        {
+          using std::sin;
+
+          const auto q = s.q();
+          const auto p = s.p();
+
+          return Geometry::State2{F_*sin(q),p};
         }
 
     }
