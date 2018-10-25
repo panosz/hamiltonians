@@ -7,7 +7,6 @@
 #include "dynamic_system.hpp"
 #include "observer.hpp"
 #include "Integration.hpp"
-#include "PoincareSurface.hpp"
 #include "action_angle.hpp"
 
 

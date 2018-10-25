@@ -6,13 +6,12 @@
 #include <boost/range/combine.hpp>
 #include <boost/math/constants/constants.hpp>
 
-#include "../Hamiltonians/include/line.hpp"
-#include "../Hamiltonians/include/Hamiltonian.hpp"
-#include "../Hamiltonians/include/dynamic_system.hpp"
-#include "../Hamiltonians/include/observer.hpp"
-#include "../Hamiltonians/include/Integration.hpp"
-#include "../Hamiltonians/include/PoincareSurface.hpp"
-#include "../Hamiltonians/include/action_angle.hpp"
+#include "line.hpp"
+#include "Hamiltonian.hpp"
+#include "dynamic_system.hpp"
+#include "observer.hpp"
+#include "Integration.hpp"
+#include "action_angle.hpp"
 
 #include "myUtilities.hpp"
 

@@ -9,7 +9,7 @@ find_package(myUtilities REQUIRED)
 add_library(
         Hamiltonians src/line.cpp include/line.hpp src/State.cpp include/State.hpp
         src/Hamiltonian.cpp include/Hamiltonian.hpp include/dynamic_system.hpp src/observer.cpp
-        include/observer.hpp src/Integration.cpp include/Integration.hpp include/PoincareSurface.hpp
+        include/observer.hpp src/Integration.cpp include/Integration.hpp
         src/dynamic_system.cpp src/action_angle.cpp include/action_angle.hpp include/periodic_q_surface.hpp)
 
 
