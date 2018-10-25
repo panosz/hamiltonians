@@ -10,7 +10,6 @@
 #include "action_angle.hpp"
 
 
-#include "myUtilities.hpp"
 
 using namespace Integrators;
 using namespace Integrators::Geometry;

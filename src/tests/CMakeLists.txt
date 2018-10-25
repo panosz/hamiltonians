@@ -17,3 +17,5 @@ find_package(myUtilities REQUIRED)
 add_executable(periodic_q_surfaceTest periodic_q_surfaceTest.cpp)
 
 target_link_libraries(periodic_q_surfaceTest  PUBLIC gmock  ${PROJECT_NAME} myUtilities::myUtilities )
+
+

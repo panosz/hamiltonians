@@ -114,5 +114,15 @@ namespace Integrators
           return Geometry::State2{F_*sin(q),p};
         }
 
+        double FreeParticle::value (const Geometry::State2& s) const noexcept
+        {
+          using boost::math::pow;
+          return 0.5*pow<2>(s.p());
+        }
+        Geometry::State2 FreeParticle::derivative (const Geometry::State2& s) const noexcept
+        {
+          return Integrators::Geometry::State2{0,s.p()};
+        }
+
     }
 }

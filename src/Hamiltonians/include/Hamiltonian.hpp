@@ -103,6 +103,16 @@ namespace Integrators
             return analytical_action(value(s));
           }
         };
+
+        class FreeParticle
+        {
+         public:
+          FreeParticle()= default;
+          double value(const Geometry::State2& s) const noexcept;
+
+          Geometry::State2 derivative(const Geometry::State2& s) const noexcept;
+        };
+
     }
 }
 

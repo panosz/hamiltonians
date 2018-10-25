@@ -13,7 +13,7 @@
 
 #include "State.hpp"
 #include "Integration.hpp"
-#include "myUtilities.hpp"
+#include "myUtilities/myUtilities.hpp"
 
 
 namespace Integrators

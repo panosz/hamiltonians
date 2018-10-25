@@ -13,7 +13,7 @@
 #include "Integration.hpp"
 #include "action_angle.hpp"
 
-#include "myUtilities.hpp"
+#include "myUtilities/linspace.hpp"
 
 using namespace Integrators;
 using namespace Integrators::Geometry;

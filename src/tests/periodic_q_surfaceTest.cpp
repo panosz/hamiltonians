@@ -4,14 +4,15 @@
 #include <iostream>
 #include <vector>
 #include <boost/range/adaptor/transformed.hpp>
+#include <periodic_q_surface.hpp>
 
-#include "periodic_q_surface.hpp"
-#include "myUtilities.hpp"
+#include "details/periodic_q_distance.hpp"
+#include "myUtilities/myUtilities.hpp"
 
 int main ()
 {
 
-  const auto periodic2 = Integrators::PeriodicQSurface{2};
+  const auto periodic2 = Integrators::Internals::PeriodicQDistance{2};
 
   for (const auto p:PanosUtilities::linspace(0, 10, 2))
     {
@@ -26,7 +27,8 @@ int main ()
   std::cout << "zero crossings" << '\n';
 
   std::ostream_iterator<double> out_it(std::cout, "\n");
-  Integrators::zero_cross(value_range.begin(), value_range.end(), out_it, 2.0);
+  PanosUtilities::zero_cross(value_range.begin(), value_range.end(), out_it, 2.0);
 
+  const auto per_surf = Integrators::Geometry::PeriodicQSurface{Integrators::Geometry::State{0,1}};
   return 0;
 }
