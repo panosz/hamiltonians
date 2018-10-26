@@ -60,6 +60,7 @@ namespace Integrators
               : v_{}
           {
             v_(arma::span(0, M - 1)) = other.v_;
+            v_(arma::span(M,N-1)).zeros(); //Important. Default initialization before copy is not guaranteed (nor should it be)
           }
 
           template<unsigned M>
