@@ -5,5 +5,5 @@
 #include "Integration.hpp"
 namespace Integrators
 {
-    
+
 }

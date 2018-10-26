@@ -5,14 +5,17 @@
 #ifndef HAMILTONIANS_INTEGRATION_HPP
 #define HAMILTONIANS_INTEGRATION_HPP
 
+#include <optional>
+#include <boost/numeric/odeint.hpp>
+#include <boost/numeric/odeint/iterator/times_time_iterator.hpp>
+
 #include "State.hpp"
 #include "line.hpp"
 #include "periodic_q_surface.hpp"
 #include "dynamic_system.hpp"
 #include "observer.hpp"
+#include "IntegrationTimeInterval.hpp"
 
-#include <boost/numeric/odeint.hpp>
-#include <boost/numeric/odeint/iterator/times_time_iterator.hpp>
 
 namespace Integrators
 {
@@ -24,11 +27,6 @@ namespace Integrators
     using ControlledStepperType = boost::numeric::odeint::controlled_runge_kutta<ErrorStepperType<StateType> >;
 
 
-    struct IntegrationTime {
-        double t_begin = 0;
-        double t_end = 0;
-        double dt_max = 0;
-    };
 
     struct IntegrationOptions {
         double abs_err = 1.0e-16;
@@ -92,7 +90,7 @@ namespace Integrators
     inline auto
     make_dynamic_system_integration_range (DS system, // not const &, see comment below
                                            Geometry::State2_Action& s_start,
-                                           const IntegrationTime& integrationTime,
+                                           const TimeInterval& integrationTime,
                                            const IntegrationOptions& options)
     {
 
@@ -104,14 +102,14 @@ namespace Integrators
           dsdt = sys.dynamic_system_Action(s);
       };
 
-      const auto dt_max = integrationTime.dt_max;
-      const auto t_begin = integrationTime.t_begin;
-      const auto t_end = integrationTime.t_end;
+      const auto dt_max_container = integrationTime.dt_max();
+      const auto t_begin = integrationTime.t_begin();
+      const auto t_end = integrationTime.t_end();
 
       const auto abs_err = options.abs_err;
       const auto rel_err = options.rel_err;
 
-      if (dt_max == 0)
+      if (!dt_max_container)
         {
           const auto controlled_stepper = make_controlled(abs_err, rel_err, ErrorStepperType<Geometry::State2_Action>());
 
@@ -125,7 +123,7 @@ namespace Integrators
       else
         {
           const auto controlled_stepper =
-              make_controlled(abs_err, rel_err, dt_max, ErrorStepperType<Geometry::State2_Action>());
+              make_controlled(abs_err, rel_err, dt_max_container.value(), ErrorStepperType<Geometry::State2_Action>());
           return boost::make_iterator_range(
               make_adaptive_time_range(controlled_stepper,
                                        integration_functor,
@@ -134,7 +132,7 @@ namespace Integrators
                                        options.initial_time_step));
         }
 
-    };
+    }
 
     template<typename DS>
     inline auto
@@ -267,7 +265,7 @@ namespace Integrators
     calculate_crossings (const Ham& hamiltonian,
                          const Geometry::State2& s_start,
                          const Geometry::Line& cross_line,
-                         const IntegrationTime& integrationTime,
+                         const TimeInterval& integrationTime,
                          const IntegrationOptions& options)
     {
 
@@ -291,7 +289,7 @@ namespace Integrators
     calculate_crossings (const Ham& hamiltonian,
                          const Geometry::State2& s_start,
                          const Geometry::PeriodicQSurfaceCrossObserver& periodicQSurfaceCrossObserver,
-                         const IntegrationTime& integrationTime,
+                         const TimeInterval& integrationTime,
                          const IntegrationOptions& options)
     {
 
@@ -316,7 +314,7 @@ namespace Integrators
     calculate_first_crossing (const Ham& hamiltonian,
                               const Geometry::State2& s_start,
                               const Geometry::Line& cross_line,
-                              const IntegrationTime& integrationTime,
+                              const TimeInterval& integrationTime,
                               const IntegrationOptions& options)
     {
 
@@ -345,7 +343,7 @@ namespace Integrators
     Geometry::State2_Extended
     come_back_home (const Ham& hamiltonian,
                     const Geometry::State2& s_start,
-                    const IntegrationTime& integrationTime,
+                    const TimeInterval& integrationTime,
                     const IntegrationOptions& options)
     {
       const auto system = Dynamics::DynamicSystem{hamiltonian};

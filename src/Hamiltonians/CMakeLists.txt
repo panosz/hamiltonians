@@ -10,7 +10,7 @@ add_library(
         Hamiltonians src/line.cpp include/line.hpp src/State.cpp include/State.hpp
         src/Hamiltonian.cpp include/Hamiltonian.hpp include/dynamic_system.hpp src/observer.cpp
         include/observer.hpp src/Integration.cpp include/Integration.hpp
-        src/dynamic_system.cpp src/action_angle.cpp include/action_angle.hpp include/details/periodic_q_distance.hpp src/details/periodic_q_distance.cpp include/periodic_q_surface.hpp src/periodic_q_surface.cpp)
+        src/dynamic_system.cpp src/action_angle.cpp include/action_angle.hpp include/details/periodic_q_distance.hpp src/details/periodic_q_distance.cpp include/periodic_q_surface.hpp src/periodic_q_surface.cpp include/IntegrationTimeInterval.hpp src/IntegrationTimeInterval.cpp)
 
 
 set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH};$ENV{HOME}")

@@ -28,15 +28,16 @@ int main ()
 
   IntegrationOptions options;
 
-  options.set_integration_time(100.0);
+  TimeInterval t_int{0,100};
+
 
   const auto integration_end_point_without_closeness_filtering =
-      calculate_first_crossing(hamiltonian, s_start, cross_line,options);
+      calculate_first_crossing(hamiltonian, s_start, cross_line, t_int,options);
 
   std::cout <<" integration end point without closeness filtering : "
               << integration_end_point_without_closeness_filtering<<'\n';
 
-  const auto actionAngleOrbit = calculate_action_angle_on_closed_orbit(hamiltonian,s_start,options,60);
+  const auto actionAngleOrbit = calculate_action_angle_on_closed_orbit(hamiltonian,s_start,t_int,options,60);
 
   std::cout << "orbit range:\n";
   std::cout << "action = "<< actionAngleOrbit.action_two_pi()<<'\n';

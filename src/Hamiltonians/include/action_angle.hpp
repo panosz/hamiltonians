@@ -42,12 +42,13 @@ namespace Integrators
     template<typename Ham>
     ActionAngleOrbit calculate_action_angle_on_closed_orbit (Ham hamiltonian,
                                                              const Geometry::State2& s_start,
+                                                             const TimeInterval& integrationTime,
                                                              IntegrationOptions& options,
                                                              size_t number_of_angles = 100)
     {
       Geometry::State2_Action s_start_Action{s_start};
 
-      const auto s_out_extended = come_back_home(hamiltonian, s_start, options);
+      const auto s_out_extended = come_back_home(hamiltonian, s_start, integrationTime, options);
 
       const auto action = s_out_extended.J();
       const auto omega = boost::math::double_constants::two_pi / s_out_extended.t();

@@ -30,7 +30,7 @@ int main ()
 
   IntegrationOptions options;
 
-  options.set_integration_time(100.0);
+  const auto integrationTime = Integrators::TimeInterval{0.0,100};
 
   const auto analytical_action = hamiltonian.analytical_action(s_start);
 
@@ -44,7 +44,7 @@ int main ()
 
 
 
-  const auto actionAngleOrbit = calculate_action_angle_on_closed_orbit(hamiltonian,s_start,options,60);
+  const auto actionAngleOrbit = calculate_action_angle_on_closed_orbit(hamiltonian,s_start,integrationTime,options,60);
 
   std::cout << "orbit range:\n";
   std::cout << "analytical_action = "<< analytical_action<<'\n';

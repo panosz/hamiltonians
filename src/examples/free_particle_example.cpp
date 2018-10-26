@@ -33,10 +33,11 @@ int main ()
 
   IntegrationOptions options;
 
-  IntegrationTime it{0,100,0.01};
+  TimeInterval t_interval{0,100,0.01};
+
 
   const auto crossings =
-      calculate_crossings(hamiltonian, s_start, periodicQsurfObserver, it, options);
+      calculate_crossings(hamiltonian, s_start, periodicQsurfObserver, t_interval, options);
 
   std::cout << " crossings : \n";
   for (const auto& c:crossings)
