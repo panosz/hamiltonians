@@ -3,6 +3,7 @@
 //
 
 #include <iostream>
+#include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/combine.hpp>
 #include <boost/math/constants/constants.hpp>
 
@@ -19,44 +20,65 @@ using namespace Integrators;
 using namespace Integrators::Geometry;
 using namespace boost::numeric::odeint;
 
-int main ()
+struct ActionResult
 {
+    double analytical_action=0;
+    double numerical_action = 0;
+    double energy=0;
+    double omega=0;
+};
 
-  const State2 s_start{0.1, 0.8};
+ActionResult calculate_action(const State2& s_init)
+{
+  ActionResult result{};
 
   const auto hamiltonian = Hamiltonian::PendulumHamiltonian{1, 1};
 
-  auto times = PanosUtilities::linspace(0.0, 10, 100);
+  result.analytical_action= hamiltonian.analytical_action(s_init);
 
-  IntegrationOptions options;
+  result.energy = hamiltonian.value(s_init);
+
+
+  const IntegrationOptions options;
 
   const auto integrationTime = Integrators::TimeInterval{0.0,100};
 
-  const auto analytical_action = hamiltonian.analytical_action(s_start);
 
-  State2 s1= s_start;
+  State2 s1= s_init;
+  
+  const auto actionAngleOrbit = calculate_action_angle_on_closed_orbit(hamiltonian,s1,integrationTime,options,2);
+
+  result.numerical_action = actionAngleOrbit.action_two_pi()*boost::math::double_constants::one_div_two_pi;
+  result.omega = actionAngleOrbit.omega();
+
+  return result;
+
+}
+
+int main ()
+{
+
+  const auto x_init_vals = PanosUtilities::linspace(0.5,0.9,30);
+
+  std::vector<ActionResult> action_result_vector;
+
+  boost::push_back(action_result_vector, x_init_vals | boost::adaptors::transformed( [](auto x){return calculate_action(State2{x,0.8});}));
+
+  std::cout<<"engergy\tanalytical_action\tnumerical_action\tomega\n";
+  for (const auto& a_r: action_result_vector)
+    std::cout << a_r.energy<<'\t'
+        << a_r.analytical_action<<'\t'
+        << a_r.numerical_action<<'\t'
+        << a_r.omega<<'\n';
 
 
-  auto orbit_range = make_interval_range(Dynamics::DynamicSystem(hamiltonian), s1, times, options);
-
-  for (const auto& s : orbit_range)
-    std::cout << s.first << '\n';
-
-
-
-  const auto actionAngleOrbit = calculate_action_angle_on_closed_orbit(hamiltonian,s_start,integrationTime,options,60);
-
-  std::cout << "orbit range:\n";
-  std::cout << "analytical_action = "<< analytical_action<<'\n';
-  std::cout << "action = "<< (actionAngleOrbit.action_two_pi()*boost::math::double_constants::one_div_two_pi) <<'\n';
-
-  for ( const auto s_t : boost::range::combine(actionAngleOrbit.positions(),actionAngleOrbit.theta()))
-    {
-      double theta;
-      State2 s;
-      boost::tie(s,theta) = s_t;
-      std::cout << theta/actionAngleOrbit.omega() << "  " << s << '\n';
-    }
+//  for ( const auto s_t : boost::range::combine(actionAngleOrbit.positions(),actionAngleOrbit.theta()))
+//    {
+//      double theta;
+//      State2 s;
+//      boost::tie(s,theta) = s_t;
+//      std::cout << theta/actionAngleOrbit.omega() << "  " << s << '\n';
+//    }
 
   return 0;
 
