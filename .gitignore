@@ -52,6 +52,7 @@ GRTAGS
 CMakeFiles/
 CMakeCache*
 cmake_*
+cmake-*
 Makefile
 *\#*
 *.json
