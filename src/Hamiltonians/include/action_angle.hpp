@@ -43,10 +43,9 @@ namespace Integrators
     ActionAngleOrbit calculate_action_angle_on_closed_orbit (Ham hamiltonian,
                                                              const Geometry::State2& s_start,
                                                              const TimeInterval& integrationTime,
-                                                             IntegrationOptions& options,
+                                                             const IntegrationOptions& options,
                                                              size_t number_of_angles = 100)
     {
-      Geometry::State2_Action s_start_Action{s_start};
 
       const auto s_out_extended = come_back_home(hamiltonian, s_start, integrationTime, options);
 
