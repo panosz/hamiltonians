@@ -39,7 +39,8 @@ ActionResult calculate_action(const State2& s_init)
   result.energy = hamiltonian.value(s_init);
 
 
-  const IntegrationOptions options;
+  IntegrationOptions options;
+  options.set_distance_threshold(1e-9);
 
   const auto integrationTime = Integrators::TimeInterval{0.0,1000};
 
