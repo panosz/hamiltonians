@@ -105,14 +105,6 @@ namespace Integrators
           return ProjectOnSurfaceObserver<StepOnFunctor, SurfaceFunctor, ValidCrossingPredicate>(stepOnFunctor, sf, pbo, vcp);
         }
 
-        template<typename StepOnFunctor>
-        auto
-        makeProjectOnLineObserver (StepOnFunctor stepOnFunctor, const Geometry::Line& line,
-                                   size_t every = 0)
-        {
-          return makeProjectOnSurfaceObserver(stepOnFunctor, Geometry::LineCrossObserver(line), [] (auto&)
-          { return true; }, every);
-        }
 
         /// \brief Aplies the observer on the integration_range
         /// \tparam Observer a type defining a bool operator() (const IntegrationRange::value_type & s_t)

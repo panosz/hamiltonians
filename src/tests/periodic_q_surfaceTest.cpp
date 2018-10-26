@@ -3,6 +3,8 @@
 //
 #include <iostream>
 #include <vector>
+#include <algorithm>
+
 #include <boost/range/adaptor/transformed.hpp>
 #include <periodic_q_surface.hpp>
 
@@ -12,23 +14,21 @@
 int main ()
 {
 
-  const auto periodic2 = Integrators::Internals::PeriodicQDistance{2};
+  const auto periodic2 = Integrators::Internals::PeriodicQDistance{0};
 
-  for (const auto p:PanosUtilities::linspace(0, 10, 2))
+  const auto x_range =PanosUtilities::linspace(0, 10, 30);
+
+  for (const auto & x: x_range)
     {
-      std::cout << p << ' ' << periodic2.distance(p) << '\n';
+      std::cout << x << ' ' << periodic2.distance(x) << '\n';
     }
 
-  std::vector<double> zero_crossings{};
+  const auto per_surf = Integrators::Geometry::PeriodicQSurfaceCrossObserver{Integrators::Geometry::State2{0,1}};
 
-  const auto value_range = PanosUtilities::linspace(0, 10, 30) |
-                           boost::adaptors::transformed([per = periodic2] (auto d)
-                                                        { return per.distance(d); });
-  std::cout << "zero crossings" << '\n';
+  const auto first_crossing  =  std::find_if(x_range.begin(),x_range.end(),
+                                             [per_surf](auto x){return per_surf(Integrators::Geometry::State2{x,0});});
+  std::cout << "zero crossing " << *first_crossing<< '\n';
 
-  std::ostream_iterator<double> out_it(std::cout, "\n");
-  PanosUtilities::zero_cross(value_range.begin(), value_range.end(), out_it, 2.0);
 
-  const auto per_surf = Integrators::Geometry::PeriodicQSurface{Integrators::Geometry::State{0,1}};
   return 0;
 }

@@ -7,6 +7,7 @@
 
 #include "State.hpp"
 #include "line.hpp"
+#include "periodic_q_surface.hpp"
 #include "dynamic_system.hpp"
 #include "observer.hpp"
 
@@ -15,19 +16,23 @@
 
 namespace Integrators
 {
-    template< typename StateType>
+    template<typename StateType>
     using ErrorStepperType = boost::numeric::odeint::runge_kutta_cash_karp54<StateType, double, StateType,
         double, boost::numeric::odeint::vector_space_algebra>;
 
     template<typename StateType>
-    using ControlledStepperType = boost::numeric::odeint::controlled_runge_kutta<ErrorStepperType< StateType> >;
+    using ControlledStepperType = boost::numeric::odeint::controlled_runge_kutta<ErrorStepperType<StateType> >;
 
 
+    struct IntegrationTime {
+        double t_begin = 0;
+        double t_end = 0;
+        double dt_max = 0;
+    };
 
     struct IntegrationOptions {
         double abs_err = 1.0e-16;
         double rel_err = 1.0e-14;
-        double integration_time = 0;
         double initial_time_step = 1e-5;
         double distance_threshold = 1.0e-13;
 
@@ -41,10 +46,7 @@ namespace Integrators
         {
           rel_err = error;
         }
-        void set_integration_time (double i_time)
-        {
-          integration_time = i_time;
-        }
+
         void set_initial_time_step (double dt_init)
         {
           initial_time_step = dt_init;
@@ -59,12 +61,12 @@ namespace Integrators
 
     template<typename DS>
     Geometry::State2_Extended step_back (const DS& system,
-                                                          const Geometry::State2 direction,
-                                                          const Geometry::State2_Action& s,
-                                                          double t,
-                                                          double distance)
+                                         const Geometry::State2 direction,
+                                         const Geometry::State2_Action& s,
+                                         double t,
+                                         double distance)
     {
-      using ErrorStepperType_Extended = ErrorStepperType<Geometry::State2_Extended >;
+      using ErrorStepperType_Extended = ErrorStepperType<Geometry::State2_Extended>;
 
       auto state_extended = Geometry::State2_Extended{s};
 
@@ -90,12 +92,9 @@ namespace Integrators
     inline auto
     make_dynamic_system_integration_range (DS system, // not const &, see comment below
                                            Geometry::State2_Action& s_start,
+                                           const IntegrationTime& integrationTime,
                                            const IntegrationOptions& options)
     {
-
-      const auto controlled_stepper = make_controlled(options.abs_err,
-                                                      options.rel_err,
-                                                      ErrorStepperType<Geometry::State2_Action >());
 
 
       //system should be passed by value to the closure, because integration_functor is coppied into the output range
@@ -105,14 +104,37 @@ namespace Integrators
           dsdt = sys.dynamic_system_Action(s);
       };
 
-      return boost::make_iterator_range(
-          make_adaptive_time_range(controlled_stepper,
-                                   integration_functor,
-                                   s_start, 0.0,
-                                   options.integration_time,
-                                   options.initial_time_step));
+      const auto dt_max = integrationTime.dt_max;
+      const auto t_begin = integrationTime.t_begin;
+      const auto t_end = integrationTime.t_end;
 
-    }
+      const auto abs_err = options.abs_err;
+      const auto rel_err = options.rel_err;
+
+      if (dt_max == 0)
+        {
+          const auto controlled_stepper = make_controlled(abs_err, rel_err, ErrorStepperType<Geometry::State2_Action>());
+
+          return boost::make_iterator_range(
+              make_adaptive_time_range(controlled_stepper,
+                                       integration_functor,
+                                       s_start, t_begin,
+                                       t_end,
+                                       options.initial_time_step));
+        }
+      else
+        {
+          const auto controlled_stepper =
+              make_controlled(abs_err, rel_err, dt_max, ErrorStepperType<Geometry::State2_Action>());
+          return boost::make_iterator_range(
+              make_adaptive_time_range(controlled_stepper,
+                                       integration_functor,
+                                       s_start, t_begin,
+                                       t_end,
+                                       options.initial_time_step));
+        }
+
+    };
 
     template<typename DS>
     inline auto
@@ -172,7 +194,6 @@ namespace Integrators
 
     }
 
-
     template<typename DS>
     Geometry::Line make_init_cross_line (const DS& system, Geometry::State2 s_start)
     {
@@ -194,11 +215,24 @@ namespace Integrators
               return step_back(sys, direction, s, t, current_distance);
           };
 
-
-
       return Observer::makeProjectOnSurfaceObserver(action_functor, Geometry::LineCrossObserver(line), filteringPredicate);
     }
 
+    template<typename DS, typename FP>
+    inline auto make_project_on_periodic_Q_observer (DS system, // not const &. may dangle
+                                                     Geometry::PeriodicQSurfaceCrossObserver po,
+                                                     FP filteringPredicate)
+    {
+
+      auto action_functor =
+          [sys = std::move(system), direction = Geometry::State2{1, 0}]
+              (Geometry::State2_Action s, double t, double current_distance)
+          {
+              return step_back(sys, direction, s, t, current_distance);
+          };
+
+      return Observer::makeProjectOnSurfaceObserver(action_functor, po, filteringPredicate);
+    }
 
     class StateNear {
       double distance_;
@@ -233,16 +267,45 @@ namespace Integrators
     calculate_crossings (const Ham& hamiltonian,
                          const Geometry::State2& s_start,
                          const Geometry::Line& cross_line,
+                         const IntegrationTime& integrationTime,
                          const IntegrationOptions& options)
     {
 
       Geometry::State2_Action s_start_Action{s_start};
 
       const auto system = Dynamics::DynamicSystem{hamiltonian};
-      const auto integration_range = Integrators::make_dynamic_system_integration_range(system, s_start_Action, options);
+      const auto integration_range = Integrators::make_dynamic_system_integration_range(system,
+                                                                                        s_start_Action,
+                                                                                        integrationTime,
+                                                                                        options);
 
       auto observer = Integrators::make_project_on_line_observer(system, cross_line, [] (auto&)
       { return true; });
+      observe(observer, integration_range);
+
+      return observer.observations();
+    }
+
+    template<typename Ham>
+    std::vector<Geometry::State2_Extended>
+    calculate_crossings (const Ham& hamiltonian,
+                         const Geometry::State2& s_start,
+                         const Geometry::PeriodicQSurfaceCrossObserver& periodicQSurfaceCrossObserver,
+                         const IntegrationTime& integrationTime,
+                         const IntegrationOptions& options)
+    {
+
+      Geometry::State2_Action s_start_Action{s_start};
+
+      const auto system = Dynamics::DynamicSystem{hamiltonian};
+      const auto integration_range = Integrators::make_dynamic_system_integration_range(system,
+                                                                                        s_start_Action,
+                                                                                        integrationTime,
+                                                                                        options);
+
+      auto observer = Integrators::make_project_on_periodic_Q_observer(system, periodicQSurfaceCrossObserver, [] (auto&)
+      { return true; });
+
       observe(observer, integration_range);
 
       return observer.observations();
@@ -253,13 +316,17 @@ namespace Integrators
     calculate_first_crossing (const Ham& hamiltonian,
                               const Geometry::State2& s_start,
                               const Geometry::Line& cross_line,
+                              const IntegrationTime& integrationTime,
                               const IntegrationOptions& options)
     {
 
       const auto system = Dynamics::DynamicSystem{hamiltonian};
       Geometry::State2_Action s_start_Action{s_start};
 
-      const auto integration_range = Integrators::make_dynamic_system_integration_range(system, s_start_Action, options);
+      const auto integration_range = Integrators::make_dynamic_system_integration_range(system,
+                                                                                        s_start_Action,
+                                                                                        integrationTime,
+                                                                                        options);
 
       auto observer = Integrators::make_project_on_line_observer(system, cross_line, [] (auto&)
       { return true; });
@@ -272,12 +339,13 @@ namespace Integrators
         throw std::runtime_error("orbit never came back");
 
       return observations.front();
-      }
+    }
 
     template<typename Ham>
     Geometry::State2_Extended
     come_back_home (const Ham& hamiltonian,
                     const Geometry::State2& s_start,
+                    const IntegrationTime& integrationTime,
                     const IntegrationOptions& options)
     {
       const auto system = Dynamics::DynamicSystem{hamiltonian};
@@ -297,7 +365,10 @@ namespace Integrators
 
       Geometry::State2_Action s_start_Action{s_start};
 
-      const auto integration_range = Integrators::make_dynamic_system_integration_range(system, s_start_Action, options);
+      const auto integration_range = Integrators::make_dynamic_system_integration_range(system,
+                                                                                        s_start_Action,
+                                                                                        integrationTime,
+                                                                                        options);
 
       observe_if(back_home_observer, integration_range);
 

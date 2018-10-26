@@ -2,6 +2,7 @@
 // Created by Panagiotis Zestanakis on 25/10/18.
 //
 
+#include <iostream>
 #include "periodic_q_surface.hpp"
 #include "boost/math/constants/constants.hpp"
 namespace Integrators
@@ -32,7 +33,7 @@ namespace Integrators
         bool PeriodicQSurfaceCrossObserver::operator() (const State2& next_point) const noexcept
         {
           const double next_distance = periodicQDistanceCalculator_.distance(next_point.q());
-          const bool crossed_line = cross_zero_and_not_branch_cut(next_distance,distance_);
+          const bool crossed_line = cross_zero_and_not_branch_cut(distance_,next_distance);
           distance_ = next_distance;
           return crossed_line;
         }
