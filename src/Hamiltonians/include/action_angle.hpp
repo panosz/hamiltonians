@@ -20,12 +20,13 @@ namespace Integrators
 {
 
     class ActionAngleOrbit {
-      double action_two_pi_;
-      double omega_;
-      std::vector<double> theta_;
-      std::vector<Geometry::State2> positions_;
+      double action_two_pi_{};
+      double omega_{};
+      std::vector<double> theta_{};
+      std::vector<Geometry::State2> positions_{};
 
      public:
+      ActionAngleOrbit()= default;
       ActionAngleOrbit (double action_two_pi,
                         double omega,
                         const std::vector<double>& theta,
@@ -47,7 +48,7 @@ namespace Integrators
                                                              size_t number_of_angles = 100)
     {
 
-      const auto s_out_extended = come_back_home(hamiltonian, s_start, integrationTime, options);
+      const auto s_out_extended = come_back_home_closed_orbit(hamiltonian, s_start, integrationTime, options);
 
       const auto action = s_out_extended.J();
       const auto omega = boost::math::double_constants::two_pi / s_out_extended.t();
@@ -67,6 +68,36 @@ namespace Integrators
       return ActionAngleOrbit{action, omega, theta, std::move(positions)};
 
     }
+
+    template<typename Ham>
+    ActionAngleOrbit calculate_action_angle_on_periodic_orbit (Ham hamiltonian,
+                                                             const Geometry::State2& s_start,
+                                                             const TimeInterval& integrationTime,
+                                                             const IntegrationOptions& options,
+                                                             size_t number_of_angles = 100)
+    {
+
+      const auto s_out_extended = come_back_home_periodic_orbit(hamiltonian, s_start, integrationTime, options);
+
+      const auto action = s_out_extended.J();
+      const auto omega = boost::math::double_constants::two_pi / s_out_extended.t();
+
+      Geometry::State2 s2 = s_start;
+
+      auto times = PanosUtilities::linspace(0.0, s_out_extended.t(), number_of_angles);
+
+      auto orbit_range = make_interval_range(Dynamics::DynamicSystem(hamiltonian), s2, times, options);
+
+      std::vector<Geometry::State2> positions{};
+      boost::push_back(positions, orbit_range | boost::adaptors::transformed([] (const auto& p)
+                                                                             { return p.first; }));
+
+      const auto theta = PanosUtilities::linspace(0.0, boost::math::double_constants::two_pi, number_of_angles);
+
+      return ActionAngleOrbit{action, omega, theta, std::move(positions)};
+
+    }
+
 
 }
 #endif //HAMILTONIANS_ACTION_ANGLE_HPP

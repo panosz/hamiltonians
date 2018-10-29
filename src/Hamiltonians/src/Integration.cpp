@@ -92,29 +92,36 @@ namespace Integrators
 
     template
     Geometry::State2_Extended
-    come_back_home<Hamiltonian::FreeParticle> (const Hamiltonian::FreeParticle& hamiltonian,
+    come_back_home_closed_orbit<Hamiltonian::FreeParticle> (const Hamiltonian::FreeParticle& hamiltonian,
                                                const Geometry::State2& s_start,
                                                const TimeInterval& integrationTime,
                                                const IntegrationOptions& options);
 
     template
     Geometry::State2_Extended
-    come_back_home<Hamiltonian::HarmonicOscillator> (const Hamiltonian::HarmonicOscillator& hamiltonian,
+    come_back_home_closed_orbit<Hamiltonian::HarmonicOscillator> (const Hamiltonian::HarmonicOscillator& hamiltonian,
                                                      const Geometry::State2& s_start,
                                                      const TimeInterval& integrationTime,
                                                      const IntegrationOptions& options);
     template
     Geometry::State2_Extended
-    come_back_home<Hamiltonian::PendulumHamiltonian> (const Hamiltonian::PendulumHamiltonian& hamiltonian,
+    come_back_home_closed_orbit<Hamiltonian::PendulumHamiltonian> (const Hamiltonian::PendulumHamiltonian& hamiltonian,
                                                       const Geometry::State2& s_start,
                                                       const TimeInterval& integrationTime,
                                                       const IntegrationOptions& options);
     template
     Geometry::State2_Extended
-    come_back_home<Hamiltonian::DuffingHamiltonian> (const Hamiltonian::DuffingHamiltonian& hamiltonian,
+    come_back_home_closed_orbit<Hamiltonian::DuffingHamiltonian> (const Hamiltonian::DuffingHamiltonian& hamiltonian,
                                                      const Geometry::State2& s_start,
                                                      const TimeInterval& integrationTime,
                                                      const IntegrationOptions& options);
+
+    template
+    Geometry::State2_Extended
+    come_back_home_periodic_orbit (const Hamiltonian::PendulumHamiltonian& hamiltonian,
+                                   const Geometry::State2& s_start,
+                                   const TimeInterval& integrationTime,
+                                   const IntegrationOptions& options);
 
 
 

@@ -337,12 +337,39 @@ namespace Integrators
       return observations.front();
     }
 
+    template<typename System, typename ObserverType>
+    Geometry::State2_Extended calculate_first_coming_back_home (System system,
+                                                                ObserverType observer,
+                                                                const Geometry::State2& s_start,
+                                                                const TimeInterval& integrationTime,
+                                                                const IntegrationOptions& options
+                                                               )
+    {
+
+      Geometry::State2_Action s_start_Action{s_start};
+
+      const auto integration_range = Integrators::make_dynamic_system_integration_range(system,
+                                                                                        s_start_Action,
+                                                                                        integrationTime,
+                                                                                        options);
+
+      observe_if(observer, integration_range);
+
+      const auto observations = observer.observations();
+
+      if (observations.empty())
+        throw std::runtime_error("orbit never came back");
+
+      return observations.front();
+
+    };
+
     template<typename Ham>
     Geometry::State2_Extended
-    come_back_home (const Ham& hamiltonian,
-                    const Geometry::State2& s_start,
-                    const TimeInterval& integrationTime,
-                    const IntegrationOptions& options)
+    come_back_home_closed_orbit (const Ham& hamiltonian,
+                                 const Geometry::State2& s_start,
+                                 const TimeInterval& integrationTime,
+                                 const IntegrationOptions& options)
     {
       const auto system = Dynamics::DynamicSystem{hamiltonian};
 
@@ -359,21 +386,32 @@ namespace Integrators
                                                                            cross_line,
                                                                            is_back_predicate);
 
-      Geometry::State2_Action s_start_Action{s_start};
+      return calculate_first_coming_back_home(system, back_home_observer, s_start, integrationTime, options);
 
-      const auto integration_range = Integrators::make_dynamic_system_integration_range(system,
-                                                                                        s_start_Action,
-                                                                                        integrationTime,
-                                                                                        options);
+    }
 
-      observe_if(back_home_observer, integration_range);
+    template<typename Ham>
+    Geometry::State2_Extended
+    come_back_home_periodic_orbit (const Ham& hamiltonian,
+                                   const Geometry::State2& s_start,
+                                   const TimeInterval& integrationTime,
+                                   const IntegrationOptions& options)
+    {
+      const auto system = Dynamics::DynamicSystem{hamiltonian};
 
-      const auto observations = back_home_observer.observations();
+      const auto is_back_predicate =
+          [p_start = s_start.p(),
+              & distance_threshold = options.distance_threshold] (auto& s)
+          {
+              return std::abs(s.p() - p_start) < distance_threshold;
+          };
 
-      if (observations.empty())
-        throw std::runtime_error("orbit never came back");
+      auto back_home_observer = Integrators::make_project_on_periodic_Q_observer(system,
+                                                                                 Geometry::PeriodicQSurfaceCrossObserver{
+                                                                                     s_start},
+                                                                                 is_back_predicate);
 
-      return observations.front();
+      return calculate_first_coming_back_home(system, back_home_observer, s_start, integrationTime, options);
 
     }
 
@@ -463,29 +501,35 @@ namespace Integrators
 
     extern template
     Geometry::State2_Extended
-    come_back_home<Hamiltonian::FreeParticle> (const Hamiltonian::FreeParticle& hamiltonian,
-                                               const Geometry::State2& s_start,
-                                               const TimeInterval& integrationTime,
-                                               const IntegrationOptions& options);
+    come_back_home_closed_orbit<Hamiltonian::FreeParticle> (const Hamiltonian::FreeParticle& hamiltonian,
+                                                            const Geometry::State2& s_start,
+                                                            const TimeInterval& integrationTime,
+                                                            const IntegrationOptions& options);
 
     extern template
     Geometry::State2_Extended
-    come_back_home<Hamiltonian::HarmonicOscillator> (const Hamiltonian::HarmonicOscillator& hamiltonian,
-                                                     const Geometry::State2& s_start,
-                                                     const TimeInterval& integrationTime,
-                                                     const IntegrationOptions& options);
+    come_back_home_closed_orbit<Hamiltonian::HarmonicOscillator> (const Hamiltonian::HarmonicOscillator& hamiltonian,
+                                                                  const Geometry::State2& s_start,
+                                                                  const TimeInterval& integrationTime,
+                                                                  const IntegrationOptions& options);
     extern template
     Geometry::State2_Extended
-    come_back_home<Hamiltonian::PendulumHamiltonian> (const Hamiltonian::PendulumHamiltonian& hamiltonian,
-                                                      const Geometry::State2& s_start,
-                                                      const TimeInterval& integrationTime,
-                                                      const IntegrationOptions& options);
+    come_back_home_closed_orbit<Hamiltonian::PendulumHamiltonian> (const Hamiltonian::PendulumHamiltonian& hamiltonian,
+                                                                   const Geometry::State2& s_start,
+                                                                   const TimeInterval& integrationTime,
+                                                                   const IntegrationOptions& options);
     extern template
     Geometry::State2_Extended
-    come_back_home<Hamiltonian::DuffingHamiltonian> (const Hamiltonian::DuffingHamiltonian& hamiltonian,
-                                                     const Geometry::State2& s_start,
-                                                     const TimeInterval& integrationTime,
-                                                     const IntegrationOptions& options);
+    come_back_home_closed_orbit<Hamiltonian::DuffingHamiltonian> (const Hamiltonian::DuffingHamiltonian& hamiltonian,
+                                                                  const Geometry::State2& s_start,
+                                                                  const TimeInterval& integrationTime,
+                                                                  const IntegrationOptions& options);
 
+    extern template
+    Geometry::State2_Extended
+    come_back_home_periodic_orbit (const Hamiltonian::PendulumHamiltonian& hamiltonian,
+                                   const Geometry::State2& s_start,
+                                   const TimeInterval& integrationTime,
+                                   const IntegrationOptions& options);
 }
 #endif //HAMILTONIANS_INTEGRATION_HPP

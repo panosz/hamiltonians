@@ -102,6 +102,13 @@ namespace Integrators
           {
             return analytical_action(value(s));
           }
+
+          double kappa(const Geometry::State2& s) const
+          {
+            const auto energy = value(s);
+            const auto kappa_square = 0.5 * two_kappa_square(energy);
+            return std::sqrt(kappa_square);
+          }
         };
 
         class FreeParticle

@@ -28,6 +28,12 @@ struct ActionResult
     double omega=0;
 };
 
+bool is_orbit_closed(const State2& s_init)
+{
+  const auto hamiltonian = Hamiltonian::PendulumHamiltonian{1, 1};
+  return hamiltonian.kappa(s_init)<1;
+}
+
 ActionResult calculate_action(const State2& s_init)
 {
   ActionResult result{};
@@ -48,7 +54,18 @@ ActionResult calculate_action(const State2& s_init)
   State2 s1= s_init;
   try
     {
-      const auto actionAngleOrbit = calculate_action_angle_on_closed_orbit(hamiltonian, s1, integrationTime, options, 2);
+      ActionAngleOrbit actionAngleOrbit{};
+
+      if (is_orbit_closed(s_init))
+        {
+          std::cout<<"closed orbit!\n";
+          actionAngleOrbit = calculate_action_angle_on_closed_orbit(hamiltonian, s1, integrationTime, options, 2);
+        }
+      else
+        {
+          std::cout<<"periodic orbit!\n";
+          actionAngleOrbit = calculate_action_angle_on_periodic_orbit(hamiltonian, s1, integrationTime, options, 2);
+        }
 
       result.numerical_action = actionAngleOrbit.action_two_pi() * boost::math::double_constants::one_div_two_pi;
       result.omega = actionAngleOrbit.omega();
@@ -68,11 +85,11 @@ ActionResult calculate_action(const State2& s_init)
 int main ()
 {
 
-  const auto x_init_vals = PanosUtilities::linspace(0.01,boost::math::double_constants::pi,30);
+  const auto x_init_vals = PanosUtilities::linspace(0.01,boost::math::double_constants::pi  ,30);
 
   std::vector<ActionResult> action_result_vector;
 
-  boost::push_back(action_result_vector, x_init_vals | boost::adaptors::transformed( [](auto x){return calculate_action(State2{x,0});}));
+  boost::push_back(action_result_vector, x_init_vals | boost::adaptors::transformed( [](auto x){return calculate_action(State2{x,0.5});}));
 
   std::cout<<"engergy\tanalytical_action\tnumerical_action\tomega\n";
   for (const auto& a_r: action_result_vector)
@@ -82,9 +99,9 @@ int main ()
         << a_r.omega<<'\n';
 
 
-  auto times = PanosUtilities::linspace(0.0, 10, 1000);
+  auto times = PanosUtilities::linspace(0.0, 1000, 1000);
 
-  auto s_escaping_init = Geometry::State2{1.62979, 0};
+  auto s_escaping_init = Geometry::State2{boost::math::double_constants::pi*0.99999, 0};
   auto orbit_range = make_interval_range(Dynamics::DynamicSystem(Hamiltonian::PendulumHamiltonian{1, 1}),
                                          s_escaping_init, times, Integrators::IntegrationOptions{});
 
