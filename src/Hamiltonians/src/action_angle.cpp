@@ -22,4 +22,20 @@ namespace Integrators
     {
       return theta_;
     }
+    ActionAngleOrbit::ActionAngleOrbit (double action_two_pi, double omega, AnglesPositions anglesPositions)
+        : action_two_pi_(action_two_pi),
+          omega_(omega),
+          theta_{std::move(anglesPositions.theta)},
+          positions_{std::move(anglesPositions.positions)}
+    {
+
+    }
+    ActionAngleOrbit::ActionAngleOrbit (double action_two_pi, double omega, AnglesPositions&& anglesPositions)
+        : action_two_pi_(action_two_pi),
+          omega_(omega),
+          theta_{anglesPositions.theta},
+          positions_{anglesPositions.positions}
+    {
+
+    }
 }

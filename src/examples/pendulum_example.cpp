@@ -85,7 +85,7 @@ ActionResult calculate_action(const State2& s_init)
 int main ()
 {
 
-  const auto x_init_vals = PanosUtilities::linspace(0.01,boost::math::double_constants::pi  ,30);
+  const auto x_init_vals = PanosUtilities::linspace(0.01,boost::math::double_constants::pi  ,300);
 
   std::vector<ActionResult> action_result_vector;
 
