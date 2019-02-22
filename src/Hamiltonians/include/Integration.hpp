@@ -277,7 +277,7 @@ namespace Integrators
 
       auto observer = Integrators::make_project_on_line_observer(system, cross_line, [] (auto&)
       { return true; });
-      observe(observer, integration_range);
+      cross(observer, integration_range);
 
       return observer.observations();
     }
@@ -302,7 +302,7 @@ namespace Integrators
       auto observer = Integrators::make_project_on_periodic_Q_observer(system, periodicQSurfaceCrossObserver, [] (auto&)
       { return true; });
 
-      observe(observer, integration_range);
+      cross(observer, integration_range);
 
       return observer.observations();
     }
@@ -327,7 +327,7 @@ namespace Integrators
       auto observer = Integrators::make_project_on_line_observer(system, cross_line, [] (auto&)
       { return true; });
 
-      observe_if(observer, integration_range);
+      cross_once(observer, integration_range);
 
       const auto observations = observer.observations();
 
@@ -353,7 +353,7 @@ namespace Integrators
                                                                                         integrationTime,
                                                                                         options);
 
-      observe_if(observer, integration_range);
+      cross_once(observer, integration_range);
 
       const auto observations = observer.observations();
 
@@ -362,7 +362,7 @@ namespace Integrators
 
       return observations.front();
 
-    };
+    }
 
     template<typename Ham>
     Geometry::State2_Extended

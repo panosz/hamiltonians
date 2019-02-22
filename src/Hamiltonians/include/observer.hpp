@@ -113,7 +113,7 @@ namespace Integrators
         /// \param integration_range
 
         template<typename Observer, typename IntegrationRange>
-        void observe (Observer& observer, const IntegrationRange& integration_range)
+        void cross (Observer& observer, const IntegrationRange& integration_range)
         {
           for (const auto& s_t: integration_range)
             observer(s_t);
@@ -127,7 +127,7 @@ namespace Integrators
         /// \param observer
         /// \param integration_range
         template<typename Observer, typename IntegrationRange>
-        void observe_if (Observer& observer, const IntegrationRange& integration_range)
+        void cross_once (Observer& observer, const IntegrationRange& integration_range)
         {
 
           boost::range::find_if(integration_range, std::ref(observer));
